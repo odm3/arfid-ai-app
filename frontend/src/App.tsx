@@ -13,12 +13,13 @@ function App() {
   const [update, setUpdate] = useState<string>('');
   const [step, setStep] = useState<number>(1);
   const [response, setResponse] = useState<string>('');
+  const [initialRes, setInitialRes] = useState<boolean>(false); 
   const [loading, setLoading] = useState<boolean>(false);
   const [items, setItems] = useState([]);
   const columns = [
     { key: "category", name: "Category", fieldName: "category", minWidth: 100, maxWidth: 200 },
-    { key: "food", name: "Food Combinations", fieldName: "food", minWidth: 100, maxWidth: 300 },
-    { key: "goal", name: "Goal", fieldName: "goal", minWidth: 100, maxWidth: 300 },
+    { key: "food", name: "Food Combinations", fieldName: "food", minWidth: 100, maxWidth: 250 },
+    { key: "goal", name: "Goal", fieldName: "goal", minWidth: 150, maxWidth: 400 },
   ];
 
   const emptySelection = new Selection({
@@ -44,7 +45,9 @@ function App() {
         }),
       });
       const data = await res.json();
-      setResponse(data.message);
+      console.log(data);
+      setInitialRes(true);
+      setResponse(data);
     } catch (error) {
       console.error(error);
     } finally {
@@ -66,7 +69,7 @@ function App() {
         }),
       });
       const data = await res.json();
-      setResponse(data.message);
+      setResponse(data);
     } catch (error) {
       console.error(error);
     } finally {
@@ -75,10 +78,9 @@ function App() {
   };
 
   useEffect(() => {
-
+    console.log(response);
     if (response) {
-      const jsonRes = JSON.parse(response);
-      const tempItems = jsonRes.recommendations.flatMap((recommendation) =>
+      const tempItems = response.recommendations.flatMap((recommendation) =>
         recommendation.foods.map((food) => ({
           category: recommendation.category,
           food: `${food.food} + ${food.ingredients.join(' + ')}`,

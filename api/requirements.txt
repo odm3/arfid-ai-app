@@ -6,4 +6,6 @@ azure-functions
 azure.keyvault.secrets
 azure.identity
 openai
+openai[datalib]
+
 

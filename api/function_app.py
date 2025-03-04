@@ -1,18 +1,14 @@
 import azure.functions as func
 import logging
 import time
-import openai
+from openai import OpenAI
 import os
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 from datetime import datetime, timedelta
 
-credential = DefaultAzureCredential()
-key_vault_name = os.environ.get("KEY_VAULT_NAME")
-key_vault_url = f"https://{key_vault_name}.vault.azure.net"
-secret_client = SecretClient(vault_url=key_vault_url, credential=credential)
-OPENAI_API_KEY = secret_client.get_secret("OPENAI-API-KEY").value
-assistant_id = secret_client.get_secret("assistant-id").value
+
+
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+assistant_id = os.environ.get("ASSISTANT_ID")
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. You are particularly aware of their allergies, ensuring that you never make a recommendation that they are allergic to. When you receive a message, you'll respond with at least 20 options. Format the response based on the provided JSON Structure.
 
@@ -22,7 +18,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
     "description": "This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
     "recommendations": [
       {
-        "category": "simple_carbohydrates",
+        "category": "Simple Carbohydrates",
         "foods": [
           {
             "food": "Example food",
@@ -32,7 +28,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
         ]
       },
       {
-        "category": "simple_proteins",
+        "category": "Simple Proteins",
         "foods": [
           {
             "food": "Example food",
@@ -57,7 +53,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
 """
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-client = openai.OpenAI()
+client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 @app.route(route="create_message", methods=[func.HttpMethod.POST])
 def create_message(req: func.HttpRequest) -> func.HttpResponse:
@@ -77,7 +73,7 @@ def create_message(req: func.HttpRequest) -> func.HttpResponse:
                 status_code=400,
             )
         file = client.files.create(
-            file=open("api/arfid.json", "rb"), purpose="assistants"
+            file=open("arfid.json", "rb"), purpose="assistants"
         )
         
         if initial:
@@ -97,12 +93,7 @@ def create_message(req: func.HttpRequest) -> func.HttpResponse:
                 ]
             )
             thread_id = thread.id
-            expiration_time = datetime.now(datetime.timezone.utc) + timedelta(hours=1)
-            secret_client.set_secret(
-                name=f"thread-id-{thread.id}-{expiration_time}",
-                value=thread.id,
-                expires_on=expiration_time
-            )
+            os.environ["THREAD_ID"] = thread_id
             query = client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=prompt1
             )
@@ -113,15 +104,14 @@ def create_message(req: func.HttpRequest) -> func.HttpResponse:
                 thread_id=thread.id, role="user", content=prompt3
             )
         else: 
-            thread_id_secret = secret_client.get_secret(f"thread-id-{thread_id}")
-            thread_id = thread_id_secret.value
+            thread_id = os.environ.get("THREAD_ID")
             query = client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
         return run_openai(client, thread_id)
     except Exception as e:
         return func.HttpResponse(
-            {"error": str(e)},
+            body=str(e),
             status_code=500,
         )
         
@@ -136,8 +126,7 @@ def run_openai(client, thread_id):
             if run.status == "completed":
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
-                return func.HttpResponse({"message": last_message.content[0].text.value}, status_code=200)
+                return func.HttpResponse(body=last_message.content[0].text.value, status_code=200)
             time.sleep(5)
     except Exception as e:
-        return func.HttpResponse({"error": str(e)}, status_code=500)
-
+        return func.HttpResponse(body=str(e), status_code=500)
