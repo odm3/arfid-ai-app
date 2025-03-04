@@ -1,0 +1,11 @@
+{
+    "routes": [
+        {
+            "route": "/api/*",
+            "rewrite": "/qpi"
+        }
+    ],
+    "navigationFallback": {
+        "rewrite": "/index.html"
+    }
+}
