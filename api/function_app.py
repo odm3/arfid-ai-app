@@ -130,3 +130,65 @@ def run_openai(client, thread_id):
             time.sleep(5)
     except Exception as e:
         return func.HttpResponse(body=str(e), status_code=500)
+
+
+@app.route(route="create_message2", auth_level=func.AuthLevel.ANONYMOUS, methods=[func.HttpMethod.POST])
+def create_message2(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("Python HTTP trigger function processed a request.")
+
+    query = None
+    try:
+        data = req.get_json()
+        prompt1 = data.get("patient_likes")
+        prompt2 = data.get("patient_dislikes")
+        prompt3 = data.get("patient_restrictions")
+        initial = data.get("initial_request")
+        update = data.get("update")
+        if (initial and not prompt1 and not prompt2 and not prompt3) or (not initial and not update):
+            return func.HttpResponse(
+                "All inputs are required",
+                status_code=400,
+            )
+        file = client.files.create(
+            file=open("arfid.json", "rb"), purpose="assistants"
+        )
+        
+        if initial:
+            # Create a new thread for the first message
+            thread = client.beta.threads.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Create 20 simple recommendations for a patient with ARFID. Focus the recommendations on using 3 or less ingredients to broaden the patient's diet.",
+                        "attachments": [
+                            {
+                                "file_id": file.id,
+                                "tools": [{ "type": "code_interpreter"}]
+                            }
+                        ]
+                    }
+                ]
+            )
+            thread_id = thread.id
+            os.environ["THREAD_ID"] = thread_id
+            query = client.beta.threads.messages.create(
+                thread_id=thread.id, role="user", content=prompt1
+            )
+            query = client.beta.threads.messages.create(
+                thread_id=thread.id, role="user", content=prompt2
+            )
+            query = client.beta.threads.messages.create(
+                thread_id=thread.id, role="user", content=prompt3
+            )
+        else: 
+            thread_id = os.environ.get("THREAD_ID")
+            query = client.beta.threads.messages.create(
+                thread_id=thread_id, content=update, role="user"
+            )
+        return run_openai(client, thread_id)
+    except Exception as e:
+        return func.HttpResponse(
+            body=str(e),
+            status_code=500,
+        )
+        

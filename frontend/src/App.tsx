@@ -32,7 +32,7 @@ function App() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/create_message', {
+      const res = await fetch('http://localhost:7071/api/create_message2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ function App() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('/api/create_message', {
+      const res = await fetch('http://localhost:7071/api/create_message2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

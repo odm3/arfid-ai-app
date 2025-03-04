@@ -3,6 +3,9 @@
   "configurations": {
     "arfid-client": {
       "appLocation": ".",
+      "apiLocation": "api",
+      "apiLanguage": "python",
+      "apiVersion": "3.10",
       "outputLocation": "dist",
       "appBuildCommand": "npm run build",
       "run": "npm run dev",
