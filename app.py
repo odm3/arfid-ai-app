@@ -21,7 +21,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
     "description": "This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
     "recommendations": [
       {
-        "category": "Dinner Option",
+        "category": "Meal Option",
         "foods": [
           {
             "food": "Example food",
