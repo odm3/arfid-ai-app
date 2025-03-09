@@ -21,7 +21,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
     "description": "This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
     "recommendations": [
       {
-        "category": "Simple Carbohydrates",
+        "category": "Dinner Option",
         "foods": [
           {
             "food": "Example food",
@@ -31,7 +31,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
         ]
       },
       {
-        "category": "Simple Proteins",
+        "category": "Snack Option",
         "foods": [
           {
             "food": "Example food",
@@ -48,7 +48,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
       },
       {
         "type": "goals",
-        "content": "General goals of the recommendations."
+        "content": "General goals of the recommendations. Nutritional and medical focus."
       }
     ]
   }
@@ -81,7 +81,7 @@ def create_message():
                 messages=[
                     {
                         "role": "user",
-                        "content": "Create 20 simple recommendations for a patient with ARFID. Focus the recommendations on using 3 or less ingredients to broaden the patient's diet.",
+                        "content": "Create 20 simple recommendations for a patient with ARFID. Please focus on meal and snack options. The goals output should focus on the nutritional and medical values. Ensure that food options do not include things that the patient won't eat or is allergic to.",
                         "attachments": [
                             {
                                 "file_id": file.id,
