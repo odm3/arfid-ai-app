@@ -109,7 +109,7 @@ def create_message():
             )
         return run_openai(client, thread_id)
     except Exception as e:
-        return jsonify(str(e), status=500)
+        return jsonify(error=str(e), status=500)
         
     
 def run_openai(client, thread_id):
@@ -122,10 +122,10 @@ def run_openai(client, thread_id):
             if run.status == "completed":
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
-                return jsonify(last_message.content[0].text.value, status_code=200)
+                return jsonify(last_message.content[0].text.value)
             time.sleep(5)
     except Exception as e:
-        return jsonify(str(e), status_code=500)
+        return jsonify(error=str(e), status_code=500)
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
