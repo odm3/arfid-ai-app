@@ -1,0 +1,38 @@
+{
+    "example_format": {
+      "title": "ARFID Assistant",
+      "description": "This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
+      "recommendations": [
+        {
+          "category": "Simple Carbohydrates",
+          "foods": [
+            {
+              "food": "Example food",
+              "ingredients": ["Example ingredient 1", "Example ingredient 2"],
+              "goal": "Example goal for the food."
+            }
+          ]
+        },
+        {
+          "category": "Simple Proteins",
+          "foods": [
+            {
+              "food": "Example food",
+              "ingredients": ["Example ingredient 1", "Example ingredient 2"],
+              "goal": "Example goal for the food."
+            }
+          ]
+        }
+      ],
+      "notes": [
+        {
+          "type": "allergen_considerations",
+          "content": "Allergen considerations based on the provided foods."
+        },
+        {
+          "type": "goals",
+          "content": "General goals of the recommendations."
+        }
+      ]
+    }
+  }
