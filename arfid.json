@@ -4,7 +4,7 @@
       "description": "This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
       "recommendations": [
         {
-          "category": "Simple Carbohydrates",
+          "category": "Category 1",
           "foods": [
             {
               "food": "Example food",
@@ -14,7 +14,7 @@
           ]
         },
         {
-          "category": "Simple Proteins",
+          "category": "Category 2",
           "foods": [
             {
               "food": "Example food",
