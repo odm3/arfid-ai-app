@@ -1,5 +1,6 @@
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import logging
 import time
 from openai import OpenAI
@@ -8,6 +9,7 @@ from datetime import datetime, timedelta
 
 
 app = Flask(__name__)
+CORS(app)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 assistant_id = os.environ.get("ASSISTANT_ID")
 instructions = """
