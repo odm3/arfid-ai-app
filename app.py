@@ -84,7 +84,7 @@ def create_message():
                         "content": """"
                         Create 20 simple recommendations for a patient with ARFID. The goals output should focus on the nutritional and medical values. Ensure that options provided in the response do not include foods that the patient doesn't like or they have allergies or other dietary restrictions.
                         Categories should be based on the patient's likes. At no point should the patient dislikes be included in the recommendations, or as categories
-                        The total number of items returned needs to be 20. 
+                        Return exactly 20 recommendations. 
                         """,
                         "attachments": [
                             {
