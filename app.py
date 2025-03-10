@@ -82,8 +82,8 @@ def create_message():
                     {
                         "role": "user",
                         "content": """"
-                        Create 20 simple recommendations for a patient with ARFID. Please focus on meal and snack options. The goals output should focus on the nutritional and medical values. Ensure that options provided in the response do not include foods that the patient doesn't like or they have allergies or other dietary restrictions.
-                        In the categories, they should be based on the sample data, as well as smart categories based on the patient's likes. At no point should the patient dislikes be included in the recommendations, or as categories". 
+                        Create 20 simple recommendations for a patient with ARFID. The goals output should focus on the nutritional and medical values. Ensure that options provided in the response do not include foods that the patient doesn't like or they have allergies or other dietary restrictions.
+                        Categories should be based on the patient's likes. At no point should the patient dislikes be included in the recommendations, or as categories". 
                         """,
                         "attachments": [
                             {
