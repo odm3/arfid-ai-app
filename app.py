@@ -128,7 +128,7 @@ def create_message():
             query = client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
-        task = run_openai.apply_async(args=[client, thread_id])
+        task = run_openai.apply_async(args=[thread_id])
         logger.info(f"Task created with ID: {task.id}")
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
@@ -136,7 +136,8 @@ def create_message():
         return jsonify(error=str(e), status=500)
 
 @celery.task 
-def run_openai(client, thread_id):
+def run_openai(thread_id):
+    logger.info(f"Running OpenAI task with thread ID: {thread_id}")
     try:
         runs = client.beta.threads.runs.create(
             thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
@@ -146,6 +147,7 @@ def run_openai(client, thread_id):
             if run.status == "completed":
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
+                logger.info(last_message.content[0].text.value)
                 return jsonify(last_message.content[0].text.value)
     except Exception as e:
         return jsonify(error=str(e), status_code=500)
