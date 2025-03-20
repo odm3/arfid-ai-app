@@ -116,8 +116,7 @@ def create_message():
     except Exception as e:
         return jsonify(error=str(e), status=500)
         
-    
-async def run_openai(client, thread_id):
+def run_openai(client, thread_id):
     try:
         runs = client.beta.threads.runs.create(
             thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
@@ -128,7 +127,7 @@ async def run_openai(client, thread_id):
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
                 return jsonify(last_message.content[0].text.value)
-            await asyncio.sleep(5)
+            time.sleep(5)
     except Exception as e:
         return jsonify(error=str(e), status_code=500)
 
