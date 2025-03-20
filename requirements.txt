@@ -8,3 +8,4 @@ openai
 openai[datalib]
 requests
 gunicorn
+asyncio

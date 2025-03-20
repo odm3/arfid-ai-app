@@ -5,6 +5,7 @@ import logging
 import time
 from openai import OpenAI
 import os
+import asyncio
 from datetime import datetime, timedelta
 
 
@@ -116,7 +117,7 @@ def create_message():
         return jsonify(error=str(e), status=500)
         
     
-def run_openai(client, thread_id):
+async def run_openai(client, thread_id):
     try:
         runs = client.beta.threads.runs.create(
             thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
@@ -127,7 +128,7 @@ def run_openai(client, thread_id):
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
                 return jsonify(last_message.content[0].text.value)
-            time.sleep(5)
+            await asyncio.sleep(5)
     except Exception as e:
         return jsonify(error=str(e), status_code=500)
 
