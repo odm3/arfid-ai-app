@@ -139,9 +139,11 @@ def create_message():
 def run_openai(thread_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id}")
     try:
-        runs = client.beta.threads.runs.create(
-            thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
-        )
+        with app.app_context():
+          client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
+          runs = client.beta.threads.runs.create(
+              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
+          )
         while True:
             run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=runs.id)
             if run.status == "completed":
