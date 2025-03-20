@@ -13,6 +13,8 @@ from celery.result import AsyncResult
 
 app = Flask(__name__)
 CORS(app)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 assistant_id = os.environ.get("ASSISTANT_ID")
 
@@ -127,9 +129,10 @@ def create_message():
                 thread_id=thread_id, content=update, role="user"
             )
         task = run_openai.apply_async(args=[client, thread_id])
-        print(task)
+        logger.info(f"Task created with ID: {task.id}")
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
+        logger.error(f"Error in /create_message: {str(e)}")
         return jsonify(error=str(e), status=500)
 
 @celery.task 
