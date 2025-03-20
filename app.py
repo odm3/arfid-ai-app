@@ -7,12 +7,26 @@ from openai import OpenAI
 import os
 import asyncio
 from datetime import datetime, timedelta
+from celery import Celery
+from celery.result import AsyncResult
 
 
 app = Flask(__name__)
 CORS(app)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 assistant_id = os.environ.get("ASSISTANT_ID")
+
+app.config.update(
+    CELERY_BROKER_URL=os.environ.get("REDIS_URL"),
+    CELERY_RESULT_BACKEND=os.environ.get("REDIS_URL"),
+)
+
+celery = Celery(
+    app.import_name,
+    backend=app.config["CELERY_RESULT_BACKEND"],
+    broker=app.config["CELERY_BROKER_URL"]
+)
+
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. You are particularly aware of their allergies, ensuring that you never make a recommendation that they are allergic to. When you receive a message, you'll respond with at least 20 options. Format the response based on the provided JSON Structure.
 
@@ -112,10 +126,12 @@ def create_message():
             query = client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
-        return run_openai(client, thread_id)
+        task = run_openai.apply_async(args=[client, thread_id])
+        return jsonify({"task_id": task.id}), 202
     except Exception as e:
         return jsonify(error=str(e), status=500)
-        
+
+@celery.task 
 def run_openai(client, thread_id):
     try:
         runs = client.beta.threads.runs.create(
@@ -126,10 +142,30 @@ def run_openai(client, thread_id):
             if run.status == "completed":
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
-                return jsonify(last_message.content[0].text.value)
-            time.sleep(5)
+                return last_message.content[0].text.value
     except Exception as e:
         return jsonify(error=str(e), status_code=500)
+
+
+@app.route('/api/get_message/<task_id>', methods=['GET'])
+def get_message_status(task_id):
+    task = AsyncResult(task_id, app=celery)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'result': task.result
+        }
+    else:
+        response = {
+            'state': task.state,
+            'error': str(task.info)
+        }
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)

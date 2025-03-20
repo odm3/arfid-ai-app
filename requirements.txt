@@ -9,3 +9,5 @@ openai[datalib]
 requests
 gunicorn
 asyncio
+celery
+redis
