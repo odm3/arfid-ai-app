@@ -17,8 +17,8 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 assistant_id = os.environ.get("ASSISTANT_ID")
 
 app.config.update(
-    CELERY_BROKER_URL=os.environ.get("REDIS_URL"),
-    CELERY_RESULT_BACKEND=os.environ.get("REDIS_URL"),
+    CELERY_BROKER_URL=os.environ.get("REDISCLOUD_URL"),
+    CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
 )
 
 celery = Celery(
@@ -127,6 +127,7 @@ def create_message():
                 thread_id=thread_id, content=update, role="user"
             )
         task = run_openai.apply_async(args=[client, thread_id])
+        print(task)
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
         return jsonify(error=str(e), status=500)
