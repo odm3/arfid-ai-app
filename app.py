@@ -149,7 +149,7 @@ def run_openai(thread_id):
             if run.status == "completed":
                 messages = client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
-                return jsonify(last_message.content[0].text.value)
+                return last_message.content[0].text.value
     except Exception as e:
         return jsonify(error=str(e), status_code=500)
 
