@@ -86,6 +86,8 @@ def create_message():
         prompt3 = data.get("patient_restrictions")
         initial = data.get("initial_request")
         update = data.get("update")
+        selected_items = data.get("selected_items") or []
+        logger.info(f"Selected Items?: {selected_items}")
         if (initial and not prompt1 and not prompt2 and not prompt3) or (not initial and not update):
             return jsonify( { "error": "All inputs are required" }, status=400 )
         file = client.files.create(
@@ -128,6 +130,10 @@ def create_message():
             query = client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
+            if (selected_items):
+                query = client.beta.threads.messages.create(
+                    thread_id=thread_id, content=selected_items, role="user"
+                )
         task = run_openai.apply_async(args=[thread_id])
         logger.info(f"Task created with ID: {task.id}")
         return jsonify({"task_id": task.id}), 202
