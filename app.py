@@ -204,7 +204,6 @@ def submit_recommendations():
     )
     query2 = client.beta.threads.messages.create(
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
-        , role="user"
     )
     task = run_openai.apply_async(args=[thread_id])
     logger.info(f"Task created with ID: {task.id}")
