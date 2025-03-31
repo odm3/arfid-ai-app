@@ -64,16 +64,16 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
 }
 """
 
+app.config["SESSION_TYPE"]="redis"
+app.config["SESSION_PERMANENT"]=False
+app.config["SESSION_USE_SIGNER"]=True
+app.config["SESSION_KEY_PREFIX"]="flask_session:"
+app.config["SESSION_REDIS"]=os.environ.get("REDISCLOUD_URL")
+app.config["secret_key"]=os.environ.get("SECRET_KEY")
 
 app.config.update(
     CELERY_BROKER_URL=os.environ.get("REDISCLOUD_URL"),
     CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
-    SESSION_TYPE="redis",
-    SESSION_PERMANENT=False,
-    SESSION_USE_SIGNER=True,
-    SESSION_KEY_PREFIX="flask_session:",
-    SESSION_REDIS=os.environ.get("REDISCLOUD_URL"),
-    secret_key=os.environ.get("SECRET_KEY"),
 )
 
 
