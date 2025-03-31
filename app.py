@@ -1,6 +1,7 @@
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_cors import CORS
+from flask_session import Session
 import logging
 import time
 from openai import OpenAI
@@ -13,22 +14,13 @@ from celery.result import AsyncResult
 
 app = Flask(__name__)
 CORS(app)
+Session(app)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-assistant_id = os.environ.get("ASSISTANT_ID")
+client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
-app.config.update(
-    CELERY_BROKER_URL=os.environ.get("REDISCLOUD_URL"),
-    CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
-)
-
-celery = Celery(
-    app.import_name,
-    backend=app.config["CELERY_RESULT_BACKEND"],
-    broker=app.config["CELERY_BROKER_URL"]
-)
-
+vector_store = client.vector_stores.create(name="ARFID Assisting Document")
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. You are particularly aware of their allergies, ensuring that you never make a recommendation that they are allergic to. When you receive a message, you'll respond with at least 20 options. Format the response based on the provided JSON Structure.
 
@@ -72,12 +64,83 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
 }
 """
 
-client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
+app.config.update(
+    CELERY_BROKER_URL=os.environ.get("REDISCLOUD_URL"),
+    CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
+    SESSION_TYPE="redis",
+    SESSION_PERMANENT=False,
+    SESSION_USE_SIGNER=True,
+    SESSION_KEY_PREFIX="flask_session:",
+    SESSION_REDIS=os.environ.get("REDISCLOUD_URL"),
+    secret_key=os.environ.get("SECRET_KEY"),
+)
+
+
+celery = Celery(
+    app.import_name,
+    backend=app.config["CELERY_RESULT_BACKEND"],
+    broker=app.config["CELERY_BROKER_URL"]
+)
+
+@app.route("/api/start", methods=["GET"])
+def start():
+    try: 
+        directory = "./files"
+        file_paths = [
+            os.path.join(directory, f)
+            for f in os.listdir(directory)
+            if f.endswith(".pdf") or f.endswith(".png")
+        ]
+        file_streams = [open(path, "rb") for path in file_paths]
+        file_batch = client.vector_stores.file_batches.upload_and_poll(
+        vector_store_id=vector_store.id, files=file_streams
+        )
+        file = client.files.create(
+            file=open("files/arfid.json", "rb"), purpose="assistants"
+        )
+
+        if file_batch.status != "completed":
+            return jsonify({"error": "File upload failed"}), 500
+        
+        assistants = client.beta.assistants.create(
+            name="ARFID Assistant",
+            description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
+            instructions=instructions,
+            default_headers={"OpenAI-Beta": "assistants=v2"},
+            model="gpt-4o-mini",
+            tools=[{"type": "code_interpreter"}, {"type": "file_search"}],
+            tool_resources={
+                "code_interpreter": {
+                    "file_ids": [file.id]
+                },
+                "file_search": {"vector_store_ids": [vector_store.id]}
+            }
+        )
+        session['assistant_id'] = assistants.id
+        logger.info(f"Assistant created with ID: {assistants.id}")
+        return jsonify({"assistant_id": assistants.id}), 200
+    except Exception as e:
+        logger.error(f"Error in /api/start: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/end", methods=["GET"])
+def end():
+    try:
+        assistant_id = session.get('assistant_id')
+        if not assistant_id:    
+            return jsonify({"error": "No assistant found"}), 400
+        client.beta.assistants.delete(assistant_id)
+        logger.info(f"Assistant with ID {assistant_id} deleted.")
+        session.pop('assistant_id', None)
+        return jsonify({"message": "Assistant deleted successfully"}), 200
+    except Exception as e:
+        logger.error(f"Error in /api/end: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    
 @app.route('/api/create_message', methods=['POST'])
 def create_message():
     logging.info("Flask route /create_message received a request.")
-
     query = None
     try:
         data = request.get_json()
@@ -88,25 +151,7 @@ def create_message():
         update = data.get("update")
         if (initial and not prompt1 and not prompt2 and not prompt3) or (not initial and not update):
             return jsonify( { "error": "All inputs are required" }, status=400 )
-        
-        directory = "./files"
-        file_paths = [
-            os.path.join(directory, f)
-            for f in os.listdir(directory)
-            if f.endswith(".pdf") or f.endswith(".png") or f.endswith(".json")
-        ]
-        uploaded_files = []
-        for file_path in file_paths:
-            with open(file_path, "rb") as file:
-                uploaded_file = client.files.create(
-                    file=file, purpose="assistants"
-                )
-                uploaded_files.append({"file_id": uploaded_file.id, "name": os.path.basename(file_path)})
-                logger.info(f"Uploaded file: {file_path}")
-        # file = client.files.create(
-        #     file=open("files/arfid.json", "rb"), purpose="assistants"
-        # )
-        
+     
         if initial:
             # Create a new thread for the first message
             thread = client.beta.threads.create(
@@ -118,13 +163,6 @@ def create_message():
                         Categories should be based on the patient's likes. At no point should the patient dislikes be included in the recommendations, or as categories
                         Return exactly 20 recommendations The return result only needs to include the formatted json. 
                         """,
-                        "attachments": [
-                            {
-                                "file_id": file["file_id"],
-                                "tools": [{"type": "code_interpreter"}]
-                            }
-                            for file in uploaded_files
-                        ]
                     }
                 ]
             )
@@ -154,6 +192,7 @@ def create_message():
 
 @celery.task 
 def run_openai(thread_id):
+    assistant_id = session.get('assistant_id')
     logger.info(f"Running OpenAI task with thread ID: {thread_id}")
     try:
         with app.app_context():
