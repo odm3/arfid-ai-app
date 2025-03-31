@@ -183,7 +183,7 @@ def create_message():
                 thread_id=thread_id, content=update, role="user"
             )
 
-        task = run_openai.apply_async(args=[thread_id])
+        task = run_openai.apply_async(args=[thread_id, session.get('assistant_id')])
         logger.info(f"Task created with ID: {task.id}")
         return jsonify({"task_id": task.id}), 202
     except Exception as e:
@@ -191,9 +191,8 @@ def create_message():
         return jsonify(error=str(e), status=500)
 
 @celery.task 
-def run_openai(thread_id):
-    assistant_id = session.get('assistant_id')
-    logger.info(f"Running OpenAI task with thread ID: {thread_id}")
+def run_openai(thread_id, assistant_id):
+    logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
           client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
