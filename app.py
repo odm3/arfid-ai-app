@@ -13,8 +13,8 @@ from celery.result import AsyncResult
 
 
 app = Flask(__name__)
+
 CORS(app)
-Session(app)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -76,7 +76,7 @@ app.config.update(
     CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
 )
 
-
+Session(app)
 celery = Celery(
     app.import_name,
     backend=app.config["CELERY_RESULT_BACKEND"],
