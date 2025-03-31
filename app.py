@@ -86,13 +86,26 @@ def create_message():
         prompt3 = data.get("patient_restrictions")
         initial = data.get("initial_request")
         update = data.get("update")
-        selected_items = data.get("selected_items") or []
-        logger.info(f"Selected Items?: {selected_items}")
         if (initial and not prompt1 and not prompt2 and not prompt3) or (not initial and not update):
             return jsonify( { "error": "All inputs are required" }, status=400 )
-        file = client.files.create(
-            file=open("arfid.json", "rb"), purpose="assistants"
-        )
+        
+        directory = "./files"
+        file_paths = [
+            os.path.join(directory, f)
+            for f in os.listdir(directory)
+            if f.endswith(".pdf") or f.endswith(".png") or f.endswith(".json")
+        ]
+        uploaded_files = []
+        for file_path in file_paths:
+            with open(file_path, "rb") as file:
+                uploaded_file = client.files.create(
+                    file=file, purpose="assistants"
+                )
+                uploaded_files.append({"file_id": uploaded_file.id, "name": os.path.basename(file_path)})
+                logger.info(f"Uploaded file: {file_path}")
+        # file = client.files.create(
+        #     file=open("files/arfid.json", "rb"), purpose="assistants"
+        # )
         
         if initial:
             # Create a new thread for the first message
@@ -107,9 +120,10 @@ def create_message():
                         """,
                         "attachments": [
                             {
-                                "file_id": file.id,
-                                "tools": [{ "type": "code_interpreter"}]
+                                "file_id": file["file_id"],
+                                "tools": [{"type": "code_interpreter"}]
                             }
+                            for file in uploaded_files
                         ]
                     }
                 ]
@@ -130,10 +144,7 @@ def create_message():
             query = client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
-            if (selected_items):
-                query = client.beta.threads.messages.create(
-                    thread_id=thread_id, content=selected_items, role="user"
-                )
+
         task = run_openai.apply_async(args=[thread_id])
         logger.info(f"Task created with ID: {task.id}")
         return jsonify({"task_id": task.id}), 202
@@ -180,6 +191,24 @@ def get_message_status(task_id):
         }
     return jsonify(response)
 
+@app.route('/api/update_with_selections', methods=['POST'])
+def submit_recommendations():
+    data = request.get_json()
+    recommendations = data.get("recommendations")
+    update = data.get("update")
+    # Process the recommendations and notes as needed
+    logger.info(f"Recommendations: {recommendations}")
+    thread_id = os.environ.get("THREAD_ID")
+    query = client.beta.threads.messages.create(
+        thread_id=thread_id, content=update, role="user"
+    )
+    query2 = client.beta.threads.messages.create(
+        thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
+        , role="user"
+    )
+    task = run_openai.apply_async(args=[thread_id])
+    logger.info(f"Task created with ID: {task.id}")
+    return jsonify({"task_id": task.id}), 202
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
         
