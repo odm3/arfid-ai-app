@@ -10,6 +10,7 @@ import asyncio
 from datetime import datetime, timedelta
 from celery import Celery
 from celery.result import AsyncResult
+import redis
 
 
 app = Flask(__name__)
@@ -68,7 +69,7 @@ app.config["SESSION_TYPE"]="redis"
 app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_USE_SIGNER"]=True
 app.config["SESSION_KEY_PREFIX"]="flask_session:"
-app.config["SESSION_REDIS"]=os.environ.get("REDISCLOUD_URL")
+app.config["SESSION_REDIS"]=redis.from_url(os.environ.get("REDISCLOUD_URL"))
 app.config["secret_key"]=os.environ.get("SECRET_KEY")
 
 app.config.update(
