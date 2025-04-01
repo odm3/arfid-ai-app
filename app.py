@@ -104,7 +104,6 @@ def start():
             name="ARFID Assistant",
             description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
             instructions=instructions,
-            default_headers={"OpenAI-Beta": "assistants=v2"},
             model="gpt-4o-mini",
             tools=[{"type": "code_interpreter"}],
             tool_resources={
