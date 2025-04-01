@@ -90,31 +90,27 @@ def start():
         file_paths = [
             os.path.join(directory, f)
             for f in os.listdir(directory)
-            if f.endswith(".pdf") or f.endswith(".png")
+            if f.endswith(".pdf") or f.endswith(".png") or f.endswith(".json")
         ]
         file_streams = [open(path, "rb") for path in file_paths]
-        file_batch = client.vector_stores.file_batches.upload_and_poll(
-        vector_store_id=vector_store.id, files=file_streams
-        )
-        file = client.files.create(
-            file=open("files/arfid.json", "rb"), purpose="assistants"
-        )
-
-        if file_batch.status != "completed":
-            return jsonify({"error": "File upload failed"}), 500
         
+        file_ids = []
+        for file_stream in file_streams:
+            uploaded_file = client.files.create(file=file_stream, purpose="assistants")
+            file_ids.append(uploaded_file.id)  # Collect the file_id
+            file_stream.close()  # Close the file stream after uploading
+
         assistants = client.beta.assistants.create(
             name="ARFID Assistant",
             description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
             instructions=instructions,
             default_headers={"OpenAI-Beta": "assistants=v2"},
             model="gpt-4o-mini",
-            tools=[{"type": "code_interpreter"}, {"type": "file_search"}],
+            tools=[{"type": "code_interpreter"}],
             tool_resources={
                 "code_interpreter": {
-                    "file_ids": [file.id]
-                },
-                "file_search": {"vector_store_ids": [vector_store.id]}
+                    "file_ids": file_ids
+                }
             }
         )
         session['assistant_id'] = assistants.id
