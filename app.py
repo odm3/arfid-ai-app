@@ -105,7 +105,7 @@ async def start():
         
         file_ids = []
         for file_stream in file_streams:
-            uploaded_file = client.files.create(file=file_stream, purpose="assistants")
+            uploaded_file = await client.files.create(file=file_stream, purpose="assistants")
             file_ids.append(uploaded_file.id)  # Collect the file_id
             file_stream.close()  # Close the file stream after uploading
 
@@ -196,7 +196,7 @@ async def run_openai(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
-          runs = client.beta.threads.runs.create_and_poll(
+          runs = await client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
           )
         if runs.status == "completed":
