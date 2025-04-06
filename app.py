@@ -186,7 +186,7 @@ async def create_message():
             await client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
-        return await run_openai(args=[thread_id, session.get('assistant_id')])
+        return await run_openai(thread_id, session.get('assistant_id'))
     except Exception as e:
         logger.error(f"Error in /create_message: {str(e)}")
         return jsonify(error=str(e), status=500)
@@ -220,7 +220,7 @@ async def submit_recommendations():
     await client.beta.threads.messages.create(
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
     )
-    return await run_openai(args=[thread_id, session.get('assistant_id')])
+    return await run_openai(thread_id, session.get('assistant_id'))
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
         
