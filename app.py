@@ -34,7 +34,7 @@ class ARFIDResponse(BaseModel):
 app = Flask(__name__)
 
 CORS(app)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = AsyncOpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
