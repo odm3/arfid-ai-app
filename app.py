@@ -108,7 +108,7 @@ async def start():
             file_ids.append(uploaded_file.id)  # Collect the file_id
             file_stream.close()  # Close the file stream after uploading
 
-        assistants = client.beta.assistants.create(
+        assistants = await client.beta.assistants.create(
             name="ARFID Assistant",
             description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
             instructions=instructions,
@@ -134,7 +134,7 @@ async def end():
         assistant_id = session.get('assistant_id')
         if not assistant_id:    
             return jsonify({"error": "No assistant found"}), 400
-        client.beta.assistants.delete(assistant_id)
+        await client.beta.assistants.delete(assistant_id)
         logger.info(f"Assistant with ID {assistant_id} deleted.")
         session.pop('assistant_id', None)
         return jsonify({"message": "Assistant deleted successfully"}), 200

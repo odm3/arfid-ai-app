@@ -12,3 +12,4 @@ gunicorn
 asyncio
 redis
 pydantic
+uvicorn
