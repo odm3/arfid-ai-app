@@ -34,7 +34,7 @@ class ARFIDResponse(BaseModel):
 app = Flask(__name__)
 
 CORS(app)
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = AsyncOpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
@@ -223,5 +223,7 @@ async def submit_recommendations():
     )
     return await run_openai(thread_id, session.get('assistant_id'))
 if __name__ == '__main__':
-    uvicorn.run("app:app", host="0.0.0.0", port=8000,reload=True)
+    from asgiref.wsgi import WsgiToAsgi
+    asgi_app = WsgiToAsgi(app)
+    uvicorn.run(asgi_app, host="0.0.0.0", port=8000, reload=True)
         
