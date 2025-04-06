@@ -2,9 +2,10 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
+from pydantic import BaseModel
 import logging
 import time
-from openai import OpenAI
+from openai import AsyncOpenAI
 import os
 import asyncio
 from datetime import datetime, timedelta
@@ -13,13 +14,31 @@ from celery.result import AsyncResult
 import redis
 
 
+class ARFIDNotes(BaseModel):
+    type: str
+    content: str
+
+class ARFIDFood(BaseModel):
+    food: str
+    ingredients: list[str]
+    goal: str
+class ARFIDRecommendation(BaseModel):
+    category: str
+    foods: list[ARFIDFood]
+
+class ARFIDResponse(BaseModel):
+    title:str
+    description:str
+    recommendations: list[ARFIDRecommendation]
+    notes: list[ARFIDNotes]
+
 app = Flask(__name__)
 
 CORS(app)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
+client = AsyncOpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 vector_store = client.vector_stores.create(name="ARFID Assisting Document")
 instructions = """
@@ -71,27 +90,18 @@ app.config["SESSION_USE_SIGNER"]=True
 app.config["SESSION_KEY_PREFIX"]="flask_session:"
 app.config["SESSION_REDIS"]=redis.from_url(os.environ.get("REDISCLOUD_URL"))
 app.config["SECRET_KEY"]=os.environ.get("FLASK_SECRET_KEY")
-
-app.config.update(
-    CELERY_BROKER_URL=os.environ.get("REDISCLOUD_URL"),
-    CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
-)
-
 Session(app)
-celery = Celery(
-    app.import_name,
-    backend=app.config["CELERY_RESULT_BACKEND"],
-    broker=app.config["CELERY_BROKER_URL"]
-)
+
+ongoing_tasks = {}
 
 @app.route("/api/start", methods=["GET"])
-def start():
+async def start():
     try: 
         directory = "./files"
         file_paths = [
             os.path.join(directory, f)
             for f in os.listdir(directory)
-            if f.endswith(".pdf") or f.endswith(".png") or f.endswith(".json")
+            if f.endswith(".pdf") or f.endswith(".png")
         ]
         file_streams = [open(path, "rb") for path in file_paths]
         
@@ -111,7 +121,8 @@ def start():
                 "code_interpreter": {
                     "file_ids": file_ids
                 }
-            }
+            },
+            response_format=ARFIDResponse
         )
         session['assistant_id'] = assistants.id
         logger.info(f"Assistant created with ID: {assistants.id}")
@@ -121,7 +132,7 @@ def start():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/end", methods=["GET"])
-def end():
+async def end():
     try:
         assistant_id = session.get('assistant_id')
         if not assistant_id:    
@@ -135,7 +146,7 @@ def end():
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/create_message', methods=['POST'])
-def create_message():
+async def create_message():
     logging.info("Flask route /create_message received a request.")
     query = None
     try:
@@ -150,7 +161,7 @@ def create_message():
      
         if initial:
             # Create a new thread for the first message
-            thread = client.beta.threads.create(
+            thread = await client.beta.threads.create(
                 messages=[
                     {
                         "role": "user",
@@ -164,84 +175,55 @@ def create_message():
             )
             thread_id = thread.id
             os.environ["THREAD_ID"] = thread_id
-            query = client.beta.threads.messages.create(
+            await client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=prompt1
             )
-            query = client.beta.threads.messages.create(
+            await client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=prompt2
             )
-            query = client.beta.threads.messages.create(
+            await client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=prompt3
             )
         else: 
             thread_id = os.environ.get("THREAD_ID")
-            query = client.beta.threads.messages.create(
+            await client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
-
-        task = run_openai.apply_async(args=[thread_id, session.get('assistant_id')])
-        logger.info(f"Task created with ID: {task.id}")
-        return jsonify({"task_id": task.id}), 202
+        return await run_openai(args=[thread_id, session.get('assistant_id')])
     except Exception as e:
         logger.error(f"Error in /create_message: {str(e)}")
         return jsonify(error=str(e), status=500)
 
-@celery.task 
-def run_openai(thread_id, assistant_id):
+async def run_openai(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
-          client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
-          runs = client.beta.threads.runs.create(
+          runs = client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
           )
-        while True:
-            run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=runs.id)
-            if run.status == "completed":
-                messages = client.beta.threads.messages.list(thread_id=thread_id)
-                last_message = messages.data[0]
-                return last_message.content[0].text.value
+        if runs.status == "completed":
+            messages = await client.beta.threads.messages.list(thread_id=thread_id)
+            last_message = messages.data[0]
+            return last_message.content[0].text.value
     except Exception as e:
+        logger.error(f"Error in run_openai: {str(e)}")
         return jsonify(error=str(e), status_code=500)
 
-
-@app.route('/api/get_message/<task_id>', methods=['GET'])
-def get_message_status(task_id):
-    task = AsyncResult(task_id, app=celery)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state != 'FAILURE':
-        response = {
-            'state': task.state,
-            'result': task.result
-        }
-    else:
-        response = {
-            'state': task.state,
-            'error': str(task.info)
-        }
-    return jsonify(response)
-
 @app.route('/api/update_with_selections', methods=['POST'])
-def submit_recommendations():
+async def submit_recommendations():
     data = request.get_json()
     recommendations = data.get("recommendations")
     update = data.get("update")
     # Process the recommendations and notes as needed
     logger.info(f"Recommendations: {recommendations}")
     thread_id = os.environ.get("THREAD_ID")
-    query = client.beta.threads.messages.create(
+    await client.beta.threads.messages.create(
         thread_id=thread_id, content=update, role="user"
     )
-    query2 = client.beta.threads.messages.create(
+    await client.beta.threads.messages.create(
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
     )
-    task = run_openai.apply_async(args=[thread_id])
-    logger.info(f"Task created with ID: {task.id}")
-    return jsonify({"task_id": task.id}), 202
+    return await run_openai(args=[thread_id, session.get('assistant_id')])
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
         
