@@ -10,6 +10,7 @@ import os
 import asyncio
 from datetime import datetime, timedelta
 import redis
+import uvicorn
 
 
 class ARFIDNotes(BaseModel):
@@ -222,5 +223,5 @@ async def submit_recommendations():
     )
     return await run_openai(thread_id, session.get('assistant_id'))
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000,reload=True)
         
