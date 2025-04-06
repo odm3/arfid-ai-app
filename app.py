@@ -9,8 +9,6 @@ from openai import AsyncOpenAI
 import os
 import asyncio
 from datetime import datetime, timedelta
-from celery import Celery
-from celery.result import AsyncResult
 import redis
 
 
@@ -40,7 +38,6 @@ logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = AsyncOpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
-vector_store = client.vector_stores.create(name="ARFID Assisting Document")
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. You are particularly aware of their allergies, ensuring that you never make a recommendation that they are allergic to. When you receive a message, you'll respond with at least 20 options. Format the response based on the provided JSON Structure.
 
