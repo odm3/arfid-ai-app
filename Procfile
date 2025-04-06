@@ -1,1 +1,2 @@
-web: gunicorn app:app --worker-class uvicorn.workers.UvicornWorker --timeout 180 --log-file=-
+web: gunicorn app:app --log-file=-
+web: gunicorn app:app --timeout 180

@@ -223,7 +223,5 @@ async def submit_recommendations():
     )
     return await run_openai(thread_id, session.get('assistant_id'))
 if __name__ == '__main__':
-    from asgiref.wsgi import WsgiToAsgi
-    asgi_app = WsgiToAsgi(app)
-    uvicorn.run(asgi_app, host="0.0.0.0", port=8000, reload=True)
+    app.run(debug=True, use_reloader=True)
         
