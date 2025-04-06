@@ -119,8 +119,7 @@ async def start():
                 "code_interpreter": {
                     "file_ids": file_ids
                 }
-            },
-            response_format=ARFIDResponse
+            }
         )
         session['assistant_id'] = assistants.id
         logger.info(f"Assistant created with ID: {assistants.id}")
