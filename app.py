@@ -213,7 +213,7 @@ async def run_openai(thread_id, assistant_id):
     try:
         with app.app_context():
           runs = await client.beta.threads.runs.create_and_poll(
-              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, poll_interval_ms=5000, timeout_sec=600, response_format={
+              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, poll_interval_ms=5000, response_format={
                   "type": "json_schema",
                   "json_schema": {
                       "name": "arfid_schema",
