@@ -5,7 +5,7 @@ from flask_session import Session
 from pydantic import BaseModel
 import logging
 import time
-from openai import AsyncOpenAI
+from openai import OpenAI
 import os
 import asyncio
 from datetime import datetime, timedelta
@@ -39,7 +39,7 @@ CORS(app)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
-client = AsyncOpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
+client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. You are particularly aware of their allergies, ensuring that you never make a recommendation that they are allergic to. When you receive a message, you'll respond with at least 20 options. Format the response based on the provided JSON Structure.
@@ -113,7 +113,7 @@ def handle_options():
         return '', 200
     
 @app.route("/api/start", methods=["GET"])
-async def start():
+def start():
     try: 
         directory = "./files"
         file_paths = [
@@ -125,11 +125,11 @@ async def start():
         
         file_ids = []
         for file_stream in file_streams:
-            uploaded_file = await client.files.create(file=file_stream, purpose="assistants")
+            uploaded_file = client.files.create(file=file_stream, purpose="assistants")
             file_ids.append(uploaded_file.id)  # Collect the file_id
             file_stream.close()  # Close the file stream after uploading
 
-        assistants = await client.beta.assistants.create(
+        assistants = client.beta.assistants.create(
             name="ARFID Assistant",
             description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
             instructions=instructions,
@@ -153,12 +153,12 @@ async def start():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/end", methods=["GET"])
-async def end():
+def end():
     try:
         assistant_id = session.get('assistant_id')
         if not assistant_id:    
             return jsonify({"error": "No assistant found"}), 400
-        await client.beta.assistants.delete(assistant_id)
+        client.beta.assistants.delete(assistant_id)
         logger.info(f"Assistant with ID {assistant_id} deleted.")
         session.pop('assistant_id', None)
         return jsonify({"message": "Assistant deleted successfully"}), 200
@@ -167,7 +167,7 @@ async def end():
         return jsonify({"error": str(e)}), 500
     
 @app.route('/api/create_message', methods=['POST'])
-async def create_message():
+def create_message():
     logging.info("Flask route /create_message received a request.")
     query = None
     try:
@@ -183,7 +183,7 @@ async def create_message():
      
         if initial:
             # Create a new thread for the first message
-            thread = await client.beta.threads.create(
+            thread =  client.beta.threads.create(
                 messages=[
                     {
                         "role": "user",
@@ -197,18 +197,18 @@ async def create_message():
             )
             thread_id = thread.id
             os.environ["THREAD_ID"] = thread_id
-            await client.beta.threads.messages.create(
+            client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=prompt1
             )
-            await client.beta.threads.messages.create(
+            client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=prompt2
             )
-            await client.beta.threads.messages.create(
+            client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=prompt3
             )
         else: 
             thread_id = os.environ.get("THREAD_ID")
-            await client.beta.threads.messages.create(
+            client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
         if not assistant_key:
@@ -228,11 +228,11 @@ async def create_message():
         return jsonify(error=str(e), status=500)
 
 @celery.task 
-async def run_openai_task(thread_id, assistant_id):
+def run_openai_task(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
-            runs = await client.beta.threads.runs.create_and_poll(
+            runs = client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
               poll_interval_ms=5000,
               response_format={
@@ -245,18 +245,18 @@ async def run_openai_task(thread_id, assistant_id):
             )
             logger.info(f"Run status: {runs.status}")
             if runs.status == "completed":
-                messages = await client.beta.threads.messages.list(thread_id=thread_id)
+                messages =  client.beta.threads.messages.list(thread_id=thread_id)
                 last_message = messages.data[0]
                 return last_message.content[0].text.value
             else:
                 logger.error(f"Run status: {runs.status}")
-                return jsonify(error="Run not completed", status_code=500)
+                return {"error": "Run not completed", "status_code": 500}
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
         return jsonify(error=str(e), status_code=500)
     
 @app.route('/api/update_with_selections', methods=['POST'])
-async def submit_recommendations():
+def submit_recommendations():
     data = request.get_json()
     recommendations = data.get("recommendations")
     assistant_key = data.get("assistant_key")
@@ -264,10 +264,10 @@ async def submit_recommendations():
     # Process the recommendations and notes as needed
     logger.info(f"Recommendations: {recommendations}")
     thread_id = os.environ.get("THREAD_ID")
-    await client.beta.threads.messages.create(
+    client.beta.threads.messages.create(
         thread_id=thread_id, content=update, role="user"
     )
-    await client.beta.threads.messages.create(
+    client.beta.threads.messages.create(
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
     )
     if not assistant_key:
@@ -280,7 +280,6 @@ async def submit_recommendations():
     task = run_openai_task.apply_async(args=[thread_id, raw_assistant_id])
     return jsonify({"task_id": task.id}), 202
 
-
 @app.route('/api/get_message', methods=['POST'])
 def get_message():
     data = request.get_json()
@@ -289,6 +288,7 @@ def get_message():
     if not task_id:
         return jsonify({"error": "task_id is required"}), 400
     task = AsyncResult(task_id, app=celery)
+    logger.info(f"Task: {task}")
     if task.state == 'PENDING':
         response = {
             'state': task.state,
