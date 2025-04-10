@@ -232,7 +232,7 @@ async def run_openai_task(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
-          runs = await client.beta.threads.runs.create_and_poll(
+            runs = await client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
               poll_interval_ms=5000,
               response_format={
@@ -242,14 +242,15 @@ async def run_openai_task(thread_id, assistant_id):
                       "schema": ARFIDResponse.model_json_schema(),
                   }
               }
-          )
-        if runs.status == "completed":
-            messages = await client.beta.threads.messages.list(thread_id=thread_id)
-            last_message = messages.data[0]
-            return last_message.content[0].text.value
-        else:
-            logger.error(f"Run status: {runs.status}")
-            return jsonify(error="Run not completed", status_code=500)
+            )
+            logger.info(f"Run status: {runs.status}")
+            if runs.status == "completed":
+                messages = await client.beta.threads.messages.list(thread_id=thread_id)
+                last_message = messages.data[0]
+                return last_message.content[0].text.value
+            else:
+                logger.error(f"Run status: {runs.status}")
+                return jsonify(error="Run not completed", status_code=500)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
         return jsonify(error=str(e), status_code=500)
