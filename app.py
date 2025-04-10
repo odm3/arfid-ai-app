@@ -10,7 +10,7 @@ import os
 import asyncio
 from datetime import datetime, timedelta
 import redis
-import uvicorn
+import hashlib
 
 
 class ARFIDNotes(BaseModel):
@@ -89,8 +89,9 @@ app.config["SESSION_KEY_PREFIX"]="flask_session:"
 app.config["SESSION_REDIS"]=redis.from_url(os.environ.get("REDISCLOUD_URL"))
 app.config["SECRET_KEY"]=os.environ.get("FLASK_SECRET_KEY")
 Session(app)
-
+redis_client = redis.from_url(os.environ.get("REDISCLOUD_URL"))
 ongoing_tasks = {}
+assistants = {}
 
 @app.route("/api/start", methods=["GET"])
 async def start():
@@ -121,9 +122,13 @@ async def start():
                 }
             }
         )
-        session['assistant_id'] = assistants.id
-        logger.info(f"Assistant created with ID: {assistants.id}")
-        return jsonify({"assistant_id": assistants.id}), 200
+        raw_assistant_id = assistants.id
+        hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
+        redis_key = f"assistant:{hashed_key}"
+        redis_client.set(redis_key, raw_assistant_id)
+        session['assistant_key'] = hashed_key
+        logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
+        return jsonify({"assistant_key": hashed_key}), 200
     except Exception as e:
         logger.error(f"Error in /api/start: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -186,7 +191,15 @@ async def create_message():
             await client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
-        return await run_openai(thread_id, session.get('assistant_id'))
+        hashed_key = session.get('assistant_key')
+        if not hashed_key:
+            return jsonify({"error": "Assistant not found in session"}), 400
+        redis_key= f"assistant:{hashed_key}"
+        raw_assistant_id = redis_client.get(redis_key)
+        if not raw_assistant_id:
+            return jsonify({"error": "Assistant not found in Redis or expired"}), 400
+        raw_assistant_id = raw_assistant_id.decode("utf-8")
+        return await run_openai(thread_id, raw_assistant_id)
     except Exception as e:
         logger.error(f"Error in /create_message: {str(e)}")
         return jsonify(error=str(e), status=500)
@@ -196,7 +209,7 @@ async def run_openai(thread_id, assistant_id):
     try:
         with app.app_context():
           runs = await client.beta.threads.runs.create_and_poll(
-              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions
+              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, response_format=ARFIDResponse
           )
         if runs.status == "completed":
             messages = await client.beta.threads.messages.list(thread_id=thread_id)
