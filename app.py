@@ -33,10 +33,7 @@ class ARFIDResponse(BaseModel):
 
 app = Flask(__name__)
 
-CORS(app,
-    resources={r"/*": {"origins": "*"}},
-    supports_credentials=True,
-    allow_headers="*")
+CORS(app)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -96,11 +93,11 @@ redis_client = redis.from_url(os.environ.get("REDISCLOUD_URL"))
 ongoing_tasks = {}
 assistants = {}
 
-@app.before_request
-def handle_options():
-    if request.method == 'OPTIONS':
-        # Flask-CORS will handle OPTIONS automatically.
-        return '', 200
+# @app.before_request
+# def handle_options():
+#     if request.method == 'OPTIONS':
+#         # Flask-CORS will handle OPTIONS automatically.
+#         return '', 200
     
 @app.route("/api/start", methods=["GET"])
 async def start():
@@ -266,7 +263,7 @@ async def submit_recommendations():
     return jsonify({"task_id": task_id}), 202
 
 
-@app.route('/api/get_message/', methods=['POST'])
+@app.route('/api/get_message', methods=['POST'])
 def get_message():
     data = request.get_json()
     task_id = data.get("task_id")
