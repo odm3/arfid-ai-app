@@ -12,6 +12,8 @@ from datetime import datetime, timedelta
 import redis
 import hashlib
 import uuid
+from celery import Celery
+from celery.result import AsyncResult
 
 class ARFIDNotes(BaseModel):
     type: str
@@ -88,8 +90,19 @@ app.config["SESSION_USE_SIGNER"]=True
 app.config["SESSION_KEY_PREFIX"]="flask_session:"
 app.config["SESSION_REDIS"]=redis.from_url(os.environ.get("REDISCLOUD_URL"))
 app.config["SECRET_KEY"]=os.environ.get("FLASK_SECRET_KEY")
+app.config.update(
+    CELERY_BROKER_URL=os.environ.get("REDISCLOUD_URL"),
+    CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
+)
 Session(app)
+celery = Celery(
+    app.import_name,
+    backend=app.config["CELERY_RESULT_BACKEND"],
+    broker=app.config["CELERY_BROKER_URL"]
+)
 redis_client = redis.from_url(os.environ.get("REDISCLOUD_URL"))
+
+
 ongoing_tasks = {}
 assistants = {}
 
@@ -205,21 +218,24 @@ async def create_message():
         if not raw_assistant_id:
             return jsonify({"error": "Assistant not found in Redis or expired"}), 400
         raw_assistant_id = raw_assistant_id.decode("utf-8")
-        task_id = str(uuid.uuid4())
-        task = asyncio.create_task(run_openai(thread_id, raw_assistant_id))
-        ongoing_tasks[task_id] = task
+        # task = asyncio.create_task(run_openai(thread_id, raw_assistant_id))
+        # ongoing_tasks[task_id] = task
+        task = run_openai_task.apply_async(args=[thread_id, raw_assistant_id])
 
-        return jsonify({"task_id": task_id}), 202
+        return jsonify({"task_id": task.id}), 202
     except Exception as e:
         logger.error(f"Error in /create_message: {str(e)}")
         return jsonify(error=str(e), status=500)
 
-async def run_openai(thread_id, assistant_id):
+@celery.task 
+async def run_openai_task(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
-          runs = await client.beta.threads.runs.create(
-              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, response_format={
+          runs = await client.beta.threads.runs.create_and_poll(
+              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
+              poll_interval_ms=5000,
+              response_format={
                   "type": "json_schema",
                   "json_schema": {
                       "name": "arfid_schema",
@@ -231,10 +247,13 @@ async def run_openai(thread_id, assistant_id):
             messages = await client.beta.threads.messages.list(thread_id=thread_id)
             last_message = messages.data[0]
             return last_message.content[0].text.value
+        else:
+            logger.error(f"Run status: {runs.status}")
+            return jsonify(error="Run not completed", status_code=500)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
         return jsonify(error=str(e), status_code=500)
-
+    
 @app.route('/api/update_with_selections', methods=['POST'])
 async def submit_recommendations():
     data = request.get_json()
@@ -257,10 +276,8 @@ async def submit_recommendations():
     if not raw_assistant_id:
         return jsonify({"error": "Assistant not found in Redis or expired"}), 400
     raw_assistant_id = raw_assistant_id.decode("utf-8")
-    task_id = str(uuid.uuid4())
-    task = asyncio.create_task(run_openai(thread_id, raw_assistant_id))
-    ongoing_tasks[task_id] = task
-    return jsonify({"task_id": task_id}), 202
+    task = run_openai_task.apply_async(args=[thread_id, raw_assistant_id])
+    return jsonify({"task_id": task.id}), 202
 
 
 @app.route('/api/get_message', methods=['POST'])
@@ -272,16 +289,24 @@ def get_message():
         return jsonify({"error": "task_id is required"}), 400
     if task_id not in ongoing_tasks:
         return jsonify({"error": "task_id not found"}), 404
-    task = ongoing_tasks.get(task_id)
-    try:
-        result = task.result()
-        del ongoing_tasks[task_id]
-        return jsonify({"result": result}), 200
-    except Exception as e:
-        logger.error(f"Error in get_message: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
+    task = AsyncResult(task_id, app=celery)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'result': task.result
+        }
+    else:
+        response = {
+            'state': task.state,
+            'error': str(task.info)
+        }
+    return jsonify(response)
+    
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
         
