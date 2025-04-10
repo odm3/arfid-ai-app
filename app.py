@@ -11,7 +11,7 @@ import asyncio
 from datetime import datetime, timedelta
 import redis
 import hashlib
-
+import uuid
 
 class ARFIDNotes(BaseModel):
     type: str
@@ -199,7 +199,11 @@ async def create_message():
         if not raw_assistant_id:
             return jsonify({"error": "Assistant not found in Redis or expired"}), 400
         raw_assistant_id = raw_assistant_id.decode("utf-8")
-        return await run_openai(thread_id, raw_assistant_id)
+        task_id = str(uuid.uuid4())
+        task = asyncio.create_task(run_openai(thread_id, raw_assistant_id))
+        ongoing_tasks[task_id] = task
+
+        return jsonify({"task_id": task_id}), 202
     except Exception as e:
         logger.error(f"Error in /create_message: {str(e)}")
         return jsonify(error=str(e), status=500)
@@ -209,7 +213,7 @@ async def run_openai(thread_id, assistant_id):
     try:
         with app.app_context():
           runs = await client.beta.threads.runs.create_and_poll(
-              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, poll_interval_ms=5000, response_format={
+              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, poll_interval_ms=5000, timeout_sec=600, response_format={
                   "type": "json_schema",
                   "json_schema": {
                       "name": "arfid_schema",
@@ -229,6 +233,7 @@ async def run_openai(thread_id, assistant_id):
 async def submit_recommendations():
     data = request.get_json()
     recommendations = data.get("recommendations")
+    assistant_key = data.get("assistant_key")
     update = data.get("update")
     # Process the recommendations and notes as needed
     logger.info(f"Recommendations: {recommendations}")
@@ -239,7 +244,38 @@ async def submit_recommendations():
     await client.beta.threads.messages.create(
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
     )
-    return await run_openai(thread_id, session.get('assistant_id'))
+    if not assistant_key:
+        return jsonify({"error": "Assistant not found in session"}), 400
+    redis_key= f"assistant:{assistant_key}"
+    raw_assistant_id = redis_client.get(redis_key)
+    if not raw_assistant_id:
+        return jsonify({"error": "Assistant not found in Redis or expired"}), 400
+    raw_assistant_id = raw_assistant_id.decode("utf-8")
+    task_id = str(uuid.uuid4())
+    task = asyncio.create_task(run_openai(thread_id, raw_assistant_id))
+    ongoing_tasks[task_id] = task
+    return jsonify({"task_id": task_id}), 202
+
+
+@app.route('/api/get_message/', methods=['POST'])
+def get_message():
+    data = request.get_json()
+    task_id = data.get("task_id")
+    logger.info(f"Getting message for task_id: {task_id}")
+    if not task_id:
+        return jsonify({"error": "task_id is required"}), 400
+    if task_id not in ongoing_tasks:
+        return jsonify({"error": "task_id not found"}), 404
+    task = ongoing_tasks.get(task_id)
+    try:
+        result = task.result()
+        del ongoing_tasks[task_id]
+        return jsonify({"result": result}), 200
+    except Exception as e:
+        logger.error(f"Error in get_message: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=True)
         
