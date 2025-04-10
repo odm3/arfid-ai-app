@@ -287,8 +287,6 @@ def get_message():
     logger.info(f"Getting message for task_id: {task_id}")
     if not task_id:
         return jsonify({"error": "task_id is required"}), 400
-    if task_id not in ongoing_tasks:
-        return jsonify({"error": "task_id not found"}), 404
     task = AsyncResult(task_id, app=celery)
     if task.state == 'PENDING':
         response = {
