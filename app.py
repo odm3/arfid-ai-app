@@ -96,6 +96,12 @@ redis_client = redis.from_url(os.environ.get("REDISCLOUD_URL"))
 ongoing_tasks = {}
 assistants = {}
 
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        # Flask-CORS will handle OPTIONS automatically.
+        return '', 200
+    
 @app.route("/api/start", methods=["GET"])
 async def start():
     try: 
