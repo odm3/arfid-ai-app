@@ -158,6 +158,7 @@ async def create_message():
         prompt3 = data.get("patient_restrictions")
         initial = data.get("initial_request")
         update = data.get("update")
+        assistant_key = data.get("assistant_key")
         if (initial and not prompt1 and not prompt2 and not prompt3) or (not initial and not update):
             return jsonify( { "error": "All inputs are required" }, status=400 )
      
@@ -191,10 +192,9 @@ async def create_message():
             await client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
-        hashed_key = session.get('assistant_key')
-        if not hashed_key:
+        if not assistant_key:
             return jsonify({"error": "Assistant not found in session"}), 400
-        redis_key= f"assistant:{hashed_key}"
+        redis_key= f"assistant:{assistant_key}"
         raw_assistant_id = redis_client.get(redis_key)
         if not raw_assistant_id:
             return jsonify({"error": "Assistant not found in Redis or expired"}), 400
