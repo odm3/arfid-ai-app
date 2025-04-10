@@ -250,9 +250,6 @@ def run_openai_task(thread_id, assistant_id):
                     messages =  client.beta.threads.messages.list(thread_id=thread_id)
                     last_message = messages.data[0]
                     return last_message.content[0].text.value
-                else:
-                    logger.error(f"Run status: {runs.status}")
-                    return {"error": "Run not completed", "status_code": 500}
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
         return jsonify(error=str(e), status_code=500)
