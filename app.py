@@ -93,11 +93,11 @@ redis_client = redis.from_url(os.environ.get("REDISCLOUD_URL"))
 ongoing_tasks = {}
 assistants = {}
 
-# @app.before_request
-# def handle_options():
-#     if request.method == 'OPTIONS':
-#         # Flask-CORS will handle OPTIONS automatically.
-#         return '', 200
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        # Flask-CORS will handle OPTIONS automatically.
+        return '', 200
     
 @app.route("/api/start", methods=["GET"])
 async def start():
@@ -218,8 +218,8 @@ async def run_openai(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
-          runs = await client.beta.threads.runs.create_and_poll(
-              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, poll_interval_ms=5000, response_format={
+          runs = await client.beta.threads.runs.create(
+              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, response_format={
                   "type": "json_schema",
                   "json_schema": {
                       "name": "arfid_schema",
