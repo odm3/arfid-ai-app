@@ -33,7 +33,10 @@ class ARFIDResponse(BaseModel):
 
 app = Flask(__name__)
 
-CORS(app)
+CORS(app,
+    resources={r"/*": {"origins": "*"}},
+    supports_credentials=True,
+    allow_headers="*")
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logger = logging.getLogger(__name__)
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
