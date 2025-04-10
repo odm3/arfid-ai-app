@@ -209,7 +209,13 @@ async def run_openai(thread_id, assistant_id):
     try:
         with app.app_context():
           runs = await client.beta.threads.runs.create_and_poll(
-              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, response_format=ARFIDResponse
+              thread_id=thread_id, assistant_id=assistant_id, instructions=instructions, response_format={
+                  "type": "json_schema",
+                  "json_schema": {
+                      "name": "arfid_schema",
+                      "schema": ARFIDResponse.model_json_schema(),
+                  }
+              }
           )
         if runs.status == "completed":
             messages = await client.beta.threads.messages.list(thread_id=thread_id)
