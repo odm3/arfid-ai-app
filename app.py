@@ -238,7 +238,8 @@ def create_message():
 def run_openai_task(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
-        run = client.beta.threads.runs.create_and_poll(
+        with app.app_context():
+            runs = client.beta.threads.runs.create(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
               response_format={
                   "type": "json_schema",
@@ -247,13 +248,16 @@ def run_openai_task(thread_id, assistant_id):
                       "schema": ARFIDResponse.model_json_schema(),
                   }
               }
-        )
+            )
+            while True:
+                run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=runs.id)
 
-        if run.status == "completed":
-            logger.info("Run completed successfully.")
-            messages =  client.beta.threads.messages.list(thread_id=thread_id)
-            last_message = messages.data[0]
-            return last_message.content[0].text.value
+                logger.info(f"Run status: {run.status}")
+                if run.status == "completed":
+                    messages =  client.beta.threads.messages.list(thread_id=thread_id)
+                    last_message = messages.data[0]
+                    return last_message.content[0].text.value
+                time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
         return {"error": str(e), "status": 500}
