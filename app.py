@@ -262,7 +262,7 @@ def run_openai_task(thread_id, assistant_id):
                             logger.info(f"Assistant role message: {msg.role}")
                             assistant_messages.append({ "role": msg.role, "content": msg.content })
                     logger.info(f"Assistant messages: {assistant_messages}")
-                    return {"result": messages.data[0]}
+                    return assistant_messages[0].content.text
                 time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
@@ -305,6 +305,7 @@ def get_message():
         return jsonify({"error": "task_id is required"}), 400
     task = AsyncResult(task_id, app=celery)
     logger.info(f"Task: {task}")
+    logger.info(f"Task result: {task.result}")
     if task.state == 'PENDING':
         response = {
             'state': task.state,
