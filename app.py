@@ -257,7 +257,7 @@ def run_openai_task(thread_id, assistant_id):
                     messages =  client.beta.threads.messages.list(thread_id=thread_id)
                     assistant_messages = [
                         msg for msg in messages.data
-                        if msg.get("role") == "assistant"
+                        if msg.role == "assistant"
                     ]
                     logger.info(f"Assistant messages: {assistant_messages}")
                     return messages.data
