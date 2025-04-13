@@ -11,7 +11,6 @@ import asyncio
 from datetime import datetime, timedelta
 import redis
 import hashlib
-import uuid
 from celery import Celery
 from celery.result import AsyncResult
 
@@ -82,7 +81,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
     ]
   }
 }
-Remember, the recommendations.length >= 20. The response should be formatted as JSON.
+Remember, the recommendations.length >= 20. The response should be a JSON string that is going to be returned to a rest API.
 """
 
 app.config["SESSION_TYPE"]="redis"
@@ -257,6 +256,7 @@ def run_openai_task(thread_id, assistant_id):
                 if run.status == "completed":
                     messages =  client.beta.threads.messages.list(thread_id=thread_id)
                     last_message = messages.data[0]
+                    logger.info(f"Last message: {last_message.content[0].text.value}")
                     return last_message.content[0].text.value
                 time.sleep(5)
     except Exception as e:
