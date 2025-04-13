@@ -152,15 +152,22 @@ def start():
         logger.error(f"Error in /api/start: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/end", methods=["GET"])
+@app.route("/api/end", methods=["POST"])
 def end():
     try:
-        assistant_id = session.get('assistant_id')
-        if not assistant_id:    
+        data = request.get_json()
+        assistant_key = data.get("assistant_key")
+        if not assistant_key:    
             return jsonify({"error": "No assistant found"}), 400
-        client.beta.assistants.delete(assistant_id)
-        logger.info(f"Assistant with ID {assistant_id} deleted.")
-        session.pop('assistant_id', None)
+        redis_key= f"assistant:{assistant_key}"
+        raw_assistant_id = redis_client.get(redis_key)
+        if not raw_assistant_id:
+            return jsonify({"error": "Assistant not found in Redis or expired"}), 400
+        raw_assistant_id = raw_assistant_id.decode("utf-8")
+        client.beta.assistants.delete(raw_assistant_id)
+        logger.info(f"Assistant with ID {raw_assistant_id} deleted.")
+        session.pop('assistant_key', None)
+        redis_client.delete(redis_key)
         return jsonify({"message": "Assistant deleted successfully"}), 200
     except Exception as e:
         logger.error(f"Error in /api/end: {str(e)}")
@@ -231,8 +238,7 @@ def create_message():
 def run_openai_task(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
-        with app.app_context():
-            runs = client.beta.threads.runs.create(
+        run = client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
               response_format={
                   "type": "json_schema",
@@ -241,16 +247,13 @@ def run_openai_task(thread_id, assistant_id):
                       "schema": ARFIDResponse.model_json_schema(),
                   }
               }
-            )
-            while True:
-                run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=runs.id)
+        )
 
-                logger.info(f"Run status: {runs.status}")
-                if runs.status == "completed":
-                    messages =  client.beta.threads.messages.list(thread_id=thread_id)
-                    last_message = messages.data[0]
-                    return last_message.content[0].text.value
-                time.sleep(5)
+        if run.status == "completed":
+            logger.info("Run completed successfully.")
+            messages =  client.beta.threads.messages.list(thread_id=thread_id)
+            last_message = messages.data[0]
+            return last_message.content[0].text.value
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
         return {"error": str(e), "status": 500}
