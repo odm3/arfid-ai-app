@@ -43,7 +43,11 @@ client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. When you receive a message, you'll respond with at least 20 options
-Remember, the recommendations.length >= 20. The response should be a JSON string.
+Remember, the recommendations.length >= 20. The response should be a JSON string. This string will be returned as JSON to the web UI. 
+
+The format being sent back to the UI is { "result": valid_json_string }.
+
+When the run is created and returned, you will return a message that is just the valid JSON string. No link to download a JSON file, just a JSON string response.
 """
 
 app.config["SESSION_TYPE"]="redis"
