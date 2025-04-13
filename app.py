@@ -82,6 +82,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
     ]
   }
 }
+Remember, the recommendations.length >= 20. The response should be formatted as JSON.
 """
 
 app.config["SESSION_TYPE"]="redis"
