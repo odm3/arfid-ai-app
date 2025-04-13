@@ -277,6 +277,9 @@ def submit_recommendations():
     client.beta.threads.messages.create(
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
     )
+    client.beta.threads.messages.create(
+        thread_id=thread_id, content="Please provide 20 ßrecommendations in the same format as before.", role="user"
+    )
     if not assistant_key:
         return jsonify({"error": "Assistant not found in session"}), 400
     redis_key= f"assistant:{assistant_key}"
