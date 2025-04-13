@@ -225,7 +225,7 @@ def run_openai_task(thread_id, assistant_id):
                                 logger.info(f"Assistant role message: {msg.role}")
                                 assistant_messages.append({ "role": msg.role, "content": msg.content })
                     logger.info(f"Assistant messages: {assistant_messages}")
-                    return assistant_messages[0]
+                    return assistant_messages
                 time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
