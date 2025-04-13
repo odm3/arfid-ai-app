@@ -81,7 +81,7 @@ You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broa
     ]
   }
 }
-Remember, the recommendations.length >= 20. The response should be a JSON string that is going to be returned to a rest API.
+Remember, the recommendations.length >= 20. The response should be a JSON string.
 """
 
 app.config["SESSION_TYPE"]="redis"
@@ -197,7 +197,7 @@ def create_message():
                         "content": """"
                         Create 20 simple recommendations for a patient with ARFID. The goals output should focus on the nutritional and medical values. Ensure that options provided in the response do not include foods that the patient doesn't like or they have allergies or other dietary restrictions.
                         Categories should be based on the patient's likes. At no point should the patient dislikes be included in the recommendations, or as categories
-                        Return exactly 20 recommendations The return result only needs to include the formatted json. 
+                        Return exactly 20 recommendations The response needs to be in JSON format for use with a web api. 
                         """,
                     }
                 ]
@@ -255,9 +255,12 @@ def run_openai_task(thread_id, assistant_id):
                 logger.info(f"Run status: {run.status}")
                 if run.status == "completed":
                     messages =  client.beta.threads.messages.list(thread_id=thread_id)
-                    last_message = messages.data[0]
-                    logger.info(f"Messages: {messages.data[0].content}")
-                    return last_message.content[0].text.value
+                    assistant_messages = [
+                        msg for msg in messages.data
+                        if msg.get("role") == "assistant"
+                    ]
+                    logger.info(f"Assistant messages: {assistant_messages}")
+                    return messages.data
                 time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
