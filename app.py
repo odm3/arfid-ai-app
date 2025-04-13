@@ -255,10 +255,11 @@ def run_openai_task(thread_id, assistant_id):
                 logger.info(f"Run status: {run.status}")
                 if run.status == "completed":
                     messages =  client.beta.threads.messages.list(thread_id=thread_id)
-                    assistant_messages = [
-                        msg for msg in messages.data
-                        if msg["role"] == "assistant"
-                    ]
+                    assistant_messages = []
+                    for msg in messages.data:
+                        if msg.role == "assistant":
+                            logger.info(f"Assistant message: {msg}")
+                            assistant_messages.append({ "role": msg.role, "content": msg.content })
                     logger.info(f"Assistant messages: {assistant_messages}")
                     return messages.data
                 time.sleep(5)
