@@ -13,6 +13,7 @@ import redis
 import hashlib
 from celery import Celery
 from celery.result import AsyncResult
+import json
 
 class ARFIDNotes(BaseModel):
     type: str
@@ -268,7 +269,7 @@ def get_message():
         return jsonify({"error": "task_id is required"}), 400
     task = AsyncResult(task_id, app=celery)
     logger.info(f"Task: {task}")
-    logger.info(f"Task result: {task.result}")
+    logger.info(f"Task result: {json.dumps(task.result)}")
     if task.state == 'PENDING':
         response = {
             'state': task.state,
