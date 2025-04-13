@@ -256,7 +256,7 @@ def run_openai_task(thread_id, assistant_id):
                 if run.status == "completed":
                     messages =  client.beta.threads.messages.list(thread_id=thread_id)
                     last_message = messages.data[0]
-                    logger.info(f"Messages: {messages}")
+                    logger.info(f"Messages: {messages.data[0].content}")
                     return last_message.content[0].text.value
                 time.sleep(5)
     except Exception as e:
