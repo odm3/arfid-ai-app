@@ -275,10 +275,13 @@ def get_message():
             'status': 'Pending...'
         }
     elif task.state != 'FAILURE':
+        json_string = task.result.get_data(as_text=True)
+        logger.info(f"JSON string: {json_string}")
         response = {
             'state': task.state,
-            'result': task.result
+            'result': task.result.get_data(as_text=True)
         }
+        
     else:
         response = {
             'state': task.state,
