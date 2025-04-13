@@ -41,46 +41,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 instructions = """
-You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. You are particularly aware of their allergies, ensuring that you never make a recommendation that they are allergic to. When you receive a message, you'll respond with at least 20 options. Format the response based on the provided JSON Structure.
-
-{
-  "example_format": {
-    "title": "ARFID Assistant",
-    "description": "This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
-    "recommendations": [
-      {
-        "category": "Category 1",
-        "foods": [
-          {
-            "food": "Example food",
-            "ingredients": ["Example ingredient 1", "Example ingredient 2"],
-            "goal": "Example goal for the food."
-          }
-        ]
-      },
-      {
-        "category": "Category 2",
-        "foods": [
-          {
-            "food": "Example food",
-            "ingredients": ["Example ingredient 1", "Example ingredient 2"],
-            "goal": "Example goal for the food."
-          }
-        ]
-      }
-    ],
-    "notes": [
-      {
-        "type": "allergen_considerations",
-        "content": "Allergen considerations based on the provided foods."
-      },
-      {
-        "type": "goals",
-        "content": "General goals of the recommendations. Nutritional and medical focus."
-      }
-    ]
-  }
-}
+You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. When you receive a message, you'll respond with at least 20 options
 Remember, the recommendations.length >= 20. The response should be a JSON string.
 """
 
@@ -262,7 +223,7 @@ def run_openai_task(thread_id, assistant_id):
                             logger.info(f"Assistant role message: {msg.role}")
                             assistant_messages.append({ "role": msg.role, "content": msg.content })
                     logger.info(f"Assistant messages: {assistant_messages}")
-                    return assistant_messages[0].content.text
+                    return assistant_messages[0]
                 time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
