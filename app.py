@@ -259,9 +259,10 @@ def run_openai_task(thread_id, assistant_id):
                     for msg in messages.data:
                         if msg.role == "assistant":
                             logger.info(f"Assistant message: {msg}")
+                            logger.info(f"Assistant role message: {msg.role}")
                             assistant_messages.append({ "role": msg.role, "content": msg.content })
                     logger.info(f"Assistant messages: {assistant_messages}")
-                    return messages.data
+                    return {"result": messages.data}
                 time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
