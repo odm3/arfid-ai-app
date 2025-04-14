@@ -232,7 +232,7 @@ def submit_recommendations():
     logger.info(f"Recommendations: {recommendations}")
     thread_id = os.environ.get("THREAD_ID")
     client.beta.threads.messages.create(
-        thread_id=thread_id, content=update, role="user"
+        thread_id=thread_id, content=f"Updates from user: {update}", role="user"
     )
     client.beta.threads.messages.create(
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
