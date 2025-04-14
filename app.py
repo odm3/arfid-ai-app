@@ -7,7 +7,6 @@ import logging
 import time
 from openai import OpenAI
 import os
-import asyncio
 from datetime import datetime, timedelta
 import redis
 import hashlib
@@ -30,7 +29,7 @@ class ARFIDRecommendation(BaseModel):
 class ARFIDResponse(BaseModel):
     title:str
     description:str
-    recommendations: conlist(ARFIDRecommendation, min_items=20)
+    recommendations: conlist(ARFIDRecommendation, min_size=20)
     notes: list[ARFIDNotes]
 
 app = Flask(__name__)
