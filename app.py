@@ -154,6 +154,7 @@ def create_message():
             thread =  client.beta.threads.create()
             thread_id = thread.id
             os.environ["THREAD_ID"] = thread_id
+            session["THREAD_ID"] = thread_id
             client.beta.threads.messages.create(
                 thread_id=thread.id, role="user", content=f"Include these foods of patients {prompt1}"
             )
@@ -164,7 +165,7 @@ def create_message():
                 thread_id=thread.id, role="user", content=f"Patient is alleric or has restrictions and can't eat: {prompt3}"
             )
         else: 
-            thread_id = os.environ.get("THREAD_ID")
+            thread_id = os.environ.get("THREAD_ID") or session.get("THREAD_ID")
             client.beta.threads.messages.create(
                 thread_id=thread_id, content=update, role="user"
             )
@@ -229,7 +230,9 @@ def submit_recommendations():
     update = data.get("update")
     # Process the recommendations and notes as needed
     logger.info(f"Recommendations: {recommendations}")
-    thread_id = os.environ.get("THREAD_ID")
+    thread_id = os.environ.get("THREAD_ID") or session.get("THREAD_ID")
+    if not thread_id:
+        return jsonify({"error": "Thread ID not found"}), 400
     client.beta.threads.messages.create(
         thread_id=thread_id, content=f"Updates from user: {update}", role="user"
     )
