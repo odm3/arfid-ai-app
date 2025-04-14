@@ -29,7 +29,7 @@ class ARFIDRecommendation(BaseModel):
 class ARFIDResponse(BaseModel):
     title:str
     description:str
-    recommendations: conlist(ARFIDRecommendation, min_length=20)
+    recommendations: conlist(ARFIDRecommendation, min_length=20, max_length=20)
     notes: list[ARFIDNotes]
 
 app = Flask(__name__)
