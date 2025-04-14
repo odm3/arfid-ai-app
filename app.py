@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, conlist
 import logging
 import time
 from openai import OpenAI
@@ -30,7 +30,7 @@ class ARFIDRecommendation(BaseModel):
 class ARFIDResponse(BaseModel):
     title:str
     description:str
-    recommendations: list[ARFIDRecommendation]
+    recommendations: conlist(ARFIDRecommendation, min_items=20)
     notes: list[ARFIDNotes]
 
 app = Flask(__name__)
@@ -42,7 +42,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 instructions = """
-You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. When you receive a message, you'll respond with at least 20 options
+You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create 20 recommendations based on their safe products. When you receive a message, you'll respond with at least 20 options
 Remember, the recommendations.length >= 20.
 """
 
