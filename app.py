@@ -43,11 +43,7 @@ client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create recommendations based on their safe products. When you receive a message, you'll respond with at least 20 options
-Remember, the recommendations.length >= 20. The response should be a JSON string. This string will be returned as JSON to the web UI. 
-
-The format being sent back to the UI is { "result": valid_json_string }.
-
-When the run is created and returned, you will return a message that is just the valid JSON string. No link to download a JSON file, just a JSON string response.
+Remember, the recommendations.length >= 20.
 """
 
 app.config["SESSION_TYPE"]="redis"
@@ -156,18 +152,7 @@ def create_message():
      
         if initial:
             # Create a new thread for the first message
-            thread =  client.beta.threads.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": """"
-                        Create 20 simple recommendations for a patient with ARFID. The goals output should focus on the nutritional and medical values. Ensure that options provided in the response do not include foods that the patient doesn't like or they have allergies or other dietary restrictions.
-                        Categories should be based on the patient's likes. At no point should the patient dislikes be included in the recommendations, or as categories
-                        Return exactly 20 recommendations The response needs to be in JSON format for use with a web api. 
-                        """,
-                    }
-                ]
-            )
+            thread =  client.beta.threads.create()
             thread_id = thread.id
             os.environ["THREAD_ID"] = thread_id
             client.beta.threads.messages.create(
@@ -230,7 +215,7 @@ def run_openai_task(thread_id, assistant_id):
                                 logger.info(f"Assistant role message: {msg.role}")
                                 assistant_messages.append({ "role": msg.role, "content": msg.content })
                     logger.info(f"Assistant messages: {assistant_messages}")
-                    return jsonify({"result":assistant_messages}), 200
+                    return {"result":assistant_messages}
                 time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
