@@ -214,6 +214,7 @@ def run_openai_task(thread_id, assistant_id):
                                 logger.info(f"Assistant message: {msg}")
                                 logger.info(f"Assistant role message: {msg.role}")
                                 assistant_messages.append({ "role": msg.role, "content": msg.content })
+                    logger.info(f"Type Assistant messages: {type(assistant_messages)}")
                     logger.info(f"Assistant messages: {assistant_messages}")
                     return {"result":assistant_messages}
                 time.sleep(5)
@@ -258,18 +259,16 @@ def get_message():
         return jsonify({"error": "task_id is required"}), 400
     task = AsyncResult(task_id, app=celery)
     logger.info(f"Task: {task}")
-    logger.info(f"Task result: {json.dumps(task.result)}")
+    logger.info(f"Task result: {task.result}")
     if task.state == 'PENDING':
         response = {
             'state': task.state,
             'status': 'Pending...'
         }
     elif task.state != 'FAILURE':
-        json_string = task.result.get_data(as_text=True)
-        logger.info(f"JSON string: {json_string}")
         response = {
             'state': task.state,
-            'result': task.result.get_data(as_text=True)
+            'result': task.result
         }
         
     else:
