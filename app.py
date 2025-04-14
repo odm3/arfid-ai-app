@@ -156,13 +156,13 @@ def create_message():
             thread_id = thread.id
             os.environ["THREAD_ID"] = thread_id
             client.beta.threads.messages.create(
-                thread_id=thread.id, role="user", content=prompt1
+                thread_id=thread.id, role="user", content=f"Include these foods of patients {prompt1}"
             )
             client.beta.threads.messages.create(
-                thread_id=thread.id, role="user", content=prompt2
+                thread_id=thread.id, role="user", content=f"Do not include these foods patient doesn't like or eats: {prompt2}"
             )
             client.beta.threads.messages.create(
-                thread_id=thread.id, role="user", content=prompt3
+                thread_id=thread.id, role="user", content=f"Patient is alleric or has restrictions and can't eat: {prompt3}"
             )
         else: 
             thread_id = os.environ.get("THREAD_ID")
@@ -216,7 +216,7 @@ def run_openai_task(thread_id, assistant_id):
                                 assistant_messages.append({ "role": msg.role, "content": msg.content })
                     logger.info(f"Type Assistant messages: {type(assistant_messages)}")
                     logger.info(f"Assistant messages: {assistant_messages}")
-                    return {"result":assistant_messages[0]["content"][0].text.value}
+                    return assistant_messages[0]["content"][0].text.value
                 time.sleep(5)
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
