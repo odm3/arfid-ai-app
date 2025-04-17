@@ -42,7 +42,6 @@ client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 instructions = """
 You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create 20 recommendations based on their safe products. Use the attached files to help with the recommendations as well as a reference for food chaining.
 Review that all assumptions based on the patient's safe foods and avoided foods are correct. 
-In addition to the JSON format, for the categories table use the arfid_recommendations pdf file as an example of the type of food categories.
 """
 
 app.config["SESSION_TYPE"]="redis"
