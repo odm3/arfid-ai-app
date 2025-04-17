@@ -244,7 +244,7 @@ def run_openai_task(thread_id, assistant_id):
                 if(len(assistant_messages) > 0):
                     return assistant_messages[0]["content"][0].text.value
                 else:
-                    return messages.data[0].content.text.value
+                    return {"error": "No assistant messages found, please resubmit response"}, 500
                     
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
