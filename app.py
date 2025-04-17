@@ -20,7 +20,6 @@ class ARFIDNotes(BaseModel):
 
 class ARFIDFood(BaseModel):
     food: str
-    ingredients: list[str]
     goal: str
 class ARFIDRecommendation(BaseModel):
     category: str
