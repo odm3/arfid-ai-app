@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 import logging
 import time
 from openai import OpenAI
@@ -30,7 +30,7 @@ class ARFIDResponse(BaseModel):
     description:str
     recommendations: list[ARFIDRecommendation]
 
-    @root_validator()
+    @model_validator(mode="after")
     def check_recommendations(cls, values):
         recommendations = values.get('recommendations', [])
         if not recommendations:
@@ -38,7 +38,7 @@ class ARFIDResponse(BaseModel):
         total_foods = sum(len(rec.foods) for rec in recommendations)
         if total_foods < 20:
             raise ValueError("Total number of foods in recommendations must be at least 20")
-        return cls
+        return values
     notes: list[ARFIDNotes]
 
 
