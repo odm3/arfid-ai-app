@@ -202,7 +202,7 @@ def run_openai_task(thread_id, assistant_id):
               },
               poll_interval=10
             )
-            logger.info(f"Runs: {runs}")
+            logger.info(f"Runs: {run}")
             logger.info(f"Run status: {run.status}")
             if run.status == "completed":
                 messages =  client.beta.threads.messages.list(thread_id=thread_id)
