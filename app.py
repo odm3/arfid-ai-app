@@ -41,8 +41,8 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 instructions = """
-You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create 20 recommendations based on their safe products. When you receive a message, you'll respond with at least 20 options
-Remember, the recommendations.length >= 20.
+You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create 20 recommendations based on their safe products. Use the attached files to help with the recommendations as well as a reference for food chaining.
+Review that all assumptions based on the patient's safe foods and avoided foods are correct. 
 """
 
 app.config["SESSION_TYPE"]="redis"
@@ -240,7 +240,7 @@ def submit_recommendations():
         thread_id=thread_id, content=f"The user has provided the following recommendations: {recommendations}, please give more suggestions like that.", role="user"
     )
     client.beta.threads.messages.create(
-        thread_id=thread_id, content="Please provide 20 ßrecommendations in the same format as before.", role="user"
+        thread_id=thread_id, content="Please provide 20 recommendations in the same format as before.", role="user"
     )
     if not assistant_key:
         return jsonify({"error": "Assistant not found in session"}), 400
