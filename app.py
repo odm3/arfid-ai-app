@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS
 from flask_session import Session
-from pydantic import BaseModel, conlist
+from pydantic import BaseModel, model_validator
 import logging
 import time
 from openai import OpenAI
@@ -28,8 +28,17 @@ class ARFIDRecommendation(BaseModel):
 class ARFIDResponse(BaseModel):
     title:str
     description:str
-    recommendations: conlist(ARFIDRecommendation, min_length=20, max_length=20)
+    recommendations: list[ARFIDRecommendation]
     notes: list[ARFIDNotes]
+
+    @model_validator(mode="after")
+    def check_recommendations(cls):
+        if not cls.recommendations:
+            raise ValueError("Recommendations cannot be empty")
+        total_foods = sum(len(rec.foods) for rec in cls.recommendations)
+        if total_foods < 20:
+            raise ValueError("Total number of foods in recommendations must be at least 20")
+        return cls
 
 app = Flask(__name__)
 
@@ -40,8 +49,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(default_headers={"OpenAI-Beta": "assistants=v2"})
 
 instructions = """
-You are an expert in Avoidant/Restrictive Food Intake Disorder. In order to broaden patients' diets, you use food chaining to create 20 recommendations based on their safe products. Use the attached files to help with the recommendations as well as a reference for food chaining.
-Review that all assumptions based on the patient's safe foods and avoided foods are correct. 
+You are an expert in Avoidant/Restrictive Food Intake Disorder. Based on the patient's safe foods, generate a detailed set of food recommendations. Your output must include exactly 20 individual food items distributed among various categories. For each recommendation, include the category name and a list of foods with a specific recommendation goal for each item. Use the attached reference files on food chaining to guide your suggestions and verify that all assumptions about the patient's safe and avoided foods are correct.
 """
 
 app.config["SESSION_TYPE"]="redis"
