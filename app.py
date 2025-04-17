@@ -60,16 +60,18 @@ Your output must include exactly 20 food items distributed among these dynamical
 
 The total number of 'foods' in the recommendations list must be at least 20. Use the user's list of safe foods as a starting point for your recommendations.
 
-Focus your recommendations on combinations of foods and meals, rather than invidual food items.
+Focus your recommendations on combinations of foods and dishes, rather than individual items. For example, a caesar salad with chicken, vs just lettuce. 
 
 For the transition strategy, provide a detailed explanation of how the patient can gradually incorporate these foods into their diet. This should include specific steps, timelines, and any necessary precautions to ensure a smooth transition. Examples can be found in the TransitionStrategy.pdf file. 
 
 Additionally, include any food precautions that the patient should be aware of when trying these new foods. This may include potential allergens, cross-contamination risks, or other dietary considerations.
 
 Ensure that the sum of all 'foods' across recommendations is exactly 20. No more, no less.
+
 """
 
 app.config["SESSION_TYPE"]="redis"
+
 app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_USE_SIGNER"]=True
 app.config["SESSION_KEY_PREFIX"]="flask_session:"
@@ -124,7 +126,8 @@ def start():
                 "code_interpreter": {
                     "file_ids": file_ids
                 }
-            }
+            },
+            temperature=1.5
         )
         raw_assistant_id = assistants.id
         hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
