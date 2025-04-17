@@ -200,7 +200,7 @@ def run_openai_task(thread_id, assistant_id):
                       "schema": ARFIDResponse.model_json_schema(),
                   }
               },
-              poll_interval=10
+              poll_interval_ms=10000
             )
             logger.info(f"Runs: {run}")
             logger.info(f"Run status: {run.status}")
