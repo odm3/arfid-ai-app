@@ -191,7 +191,7 @@ def run_openai_task(thread_id, assistant_id):
     logger.info(f"Running OpenAI task with thread ID: {thread_id} and assistant ID: {assistant_id}")
     try:
         with app.app_context():
-            runs = client.beta.threads.runs.create(
+            run = client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
               response_format={
                   "type": "json_schema",
@@ -199,26 +199,29 @@ def run_openai_task(thread_id, assistant_id):
                       "name": "arfid_schema",
                       "schema": ARFIDResponse.model_json_schema(),
                   }
-              }
+              },
+              poll_interval=10
             )
-            while True:
-                run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=runs.id)
-
-                logger.info(f"Run status: {run.status}")
-                if run.status == "completed":
-                    messages =  client.beta.threads.messages.list(thread_id=thread_id)
-                    assistant_messages = []
-                    logger.info(f"Messages: {messages.data}")
-                    if len(messages.data) > 0:
-                        for msg in messages.data:
-                            if msg.role == "assistant":
-                                logger.info(f"Assistant message: {msg}")
-                                logger.info(f"Assistant role message: {msg.role}")
-                                assistant_messages.append({ "role": msg.role, "content": msg.content })
-                    logger.info(f"Type Assistant messages: {type(assistant_messages)}")
-                    logger.info(f"Assistant messages: {assistant_messages}")
+            logger.info(f"Runs: {runs}")
+            logger.info(f"Run status: {run.status}")
+            if run.status == "completed":
+                messages =  client.beta.threads.messages.list(thread_id=thread_id)
+                assistant_messages = []
+                logger.info(f"Messages: {messages.data}")
+                logger.info(f"Messages: {messages}")
+                if len(messages.data) > 0:
+                    for msg in messages.data:
+                        if msg.role == "assistant":
+                            logger.info(f"Assistant message: {msg}")
+                            logger.info(f"Assistant role message: {msg.role}")
+                            assistant_messages.append({ "role": msg.role, "content": msg.content })
+                logger.info(f"Type Assistant messages: {type(assistant_messages)}")
+                logger.info(f"Assistant messages: {assistant_messages}")
+                if(len(assistant_messages) > 0):
                     return assistant_messages[0]["content"][0].text.value
-                time.sleep(5)
+                else:
+                    return messages.data[0].content.text.value
+                    
     except Exception as e:
         logger.error(f"Error in run_openai: {str(e)}")
         return {"error": str(e), "status": 500}
