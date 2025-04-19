@@ -59,6 +59,7 @@ Group the recommendations into categories that reflect the patient's input (for 
 For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. 
 
 Ensure that the final output contains exactly 20 food items in total. Use arfid.json as an example of the expected output to be returned.
+For every entry in the recommendations list, the sum of all the entry.foods list should equal 20. Keep generating responses if this is less than 20. 
 """
 
 app.config["SESSION_TYPE"]="redis"
@@ -97,7 +98,7 @@ def start():
         file_paths = [
             os.path.join(directory, f)
             for f in os.listdir(directory)
-            if f.endswith(".pdf") or f.endswith(".png")
+            if f.endswith(".pdf") or f.endswith(".png") or f.endswith(".json")
         ]
         file_streams = [open(path, "rb") for path in file_paths]
         
