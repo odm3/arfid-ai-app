@@ -54,16 +54,11 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI()
 
 instructions = """
-You are a medical expert in Avoidant/Restrictive Food Intake Disorder who specializes in designing varied meal plans using food chaining. Based on the patient's safe foods, avoided foods, and any additional dietary restrictions provided by the user, generate a detailed set of 20 food recommendations. Your recommendations should be organized by categories that naturally emerge from the patient's input (for example, if the user mentions more proteins or vegetables, include those as additional categories). 
+You are an ARFID expert. Based on the patient's input for safe foods, avoided foods, and restrictions, generate exactly 20 food recommendations. 
+Group the recommendations into categories that reflect the patient's input (for example, extra proteins, more vegetables, or additional snacks). 
+For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. 
 
-Your output must include exactly 20 food items distributed among these dynamically determined categories. Assume that all assumptions about the patient's safe and avoided foods are correct.
-
-Focus your recommendations on combinations of foods and dishes, rather than individual items, e.g, a caesar salad with chicken, vs just lettuce. 
-
-For the transition strategy, provide detailed and varied explanations of how the patient can gradually incorporate these foods into their diet. This should include specific steps, timelines, and any necessary precautions to ensure a smooth transition. Examples can be found in the TransitionStrategy.pdf file. 
-
-Additionally, include any food precautions that the patient should be aware of when trying these new foods. This may include potential allergens, cross-contamination risks, or other dietary considerations.
-
+Ensure that the final output contains exactly 20 food items in total.
 """
 
 app.config["SESSION_TYPE"]="redis"
