@@ -58,7 +58,7 @@ You are an ARFID expert. Based on the patient's input for safe foods, avoided fo
 Group the recommendations into categories that reflect the patient's input (for example, extra proteins, more vegetables, or additional snacks). 
 For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. 
 
-Ensure that the final output contains exactly 20 food items in total.
+Ensure that the final output contains exactly 20 food items in total. Use arfid.json as an example of the expected output to be returned.
 """
 
 app.config["SESSION_TYPE"]="redis"

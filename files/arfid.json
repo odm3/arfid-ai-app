@@ -1,0 +1,156 @@
+{
+    "title": "20 Food Recommendations Using Food Chaining Method",
+    "description": "A detailed set of food recommendations structured for a patient with avoidant/restrictive food intake disorder, tailored specifically to their liking for chicken while avoiding beef and sesame.",
+    "recommendations": [
+        {
+            "category": "Proteins",
+            "foods": [
+                {
+                    "food": "Grilled Chicken Breast",
+                    "goal": "Increase familiarity with different cooking methods.",
+                    "transition_strategy": "Start by having grilled chicken in a familiar seasoning then gradually try different marinades.",
+                    "food_precautions": "Ensure no sesame or beef-based ingredients are used in marinades."
+                },
+                {
+                    "food": "Chicken Tenders",
+                    "goal": "Provide a crunchy texture option.",
+                    "transition_strategy": "Prepare tenders lightly breaded, using familiar breadcrumbs, then introduce new spices gradually.",
+                    "food_precautions": "Check the breadcrumb ingredients for sesame oil or seasoning."
+                },
+                {
+                    "food": "Chicken Salad (without sesame dressing)",
+                    "goal": "Introduce vegetables gradually.",
+                    "transition_strategy": "Incorporate just a little finely chopped celery or carrots into the chicken salad first.",
+                    "food_precautions": "Use mayonnaise or yogurt dressing; verify no allergens present."
+                },
+                {
+                    "food": "Rotisserie Chicken",
+                    "goal": "Try different flavor profiles of chicken.",
+                    "transition_strategy": "Buy from a trusted source or make at home; gradually try different herbs without allergens.",
+                    "food_precautions": "Avoid any products that might have sesame-based seasonings."
+                },
+                {
+                    "food": "Chicken Soup",
+                    "goal": "Encourage exploring liquids/textures.",
+                    "transition_strategy": "Start with a familiar broth, adding in chicken pieces and mild spices slowly.",
+                    "food_precautions": "Ensure broth is homemade or checked for allergens."
+                },
+                {
+                    "food": "Chicken Quesadilla",
+                    "goal": "Introduce a familiar comfort food with chicken.",
+                    "transition_strategy": "Use a simple cheese and soft tortilla; gradually try varied fillings.",
+                    "food_precautions": "Ensure cheese and tortillas are free of sesame ingredients."
+                },
+                {
+                    "food": "Chicken Stir-Fry",
+                    "goal": "Introduce a variety of textures with chicken.",
+                    "transition_strategy": "Begin with chicken and one type of mild vegetable; increase variety over time.",
+                    "food_precautions": "Use soy sauce safe for allergies, ensuring no sesame oil."
+                }
+            ]
+        },
+        {
+            "category": "Grains",
+            "foods": [
+                {
+                    "food": "Rice",
+                    "goal": "Introduce a new base for meals.",
+                    "transition_strategy": "Begin with plain white rice; later introduce varied herbs/spices.",
+                    "food_precautions": "Ensure no sesame oil is used."
+                },
+                {
+                    "food": "Pasta",
+                    "goal": "Expand carbohydrate options gradually.",
+                    "transition_strategy": "Start with plain pasta and a light olive oil drizzle, then add chicken and mild vegetables.",
+                    "food_precautions": "Confirm no cross-contamination with sesame products."
+                },
+                {
+                    "food": "Quinoa",
+                    "goal": "Introduce a healthier grain alternative.",
+                    "transition_strategy": "Cook quinoa simply with water; can mix with cooked chicken for flavor.",
+                    "food_precautions": "Rinse well to remove saponins that may cause distaste."
+                },
+                {
+                    "food": "Bread (without sesame seeds)",
+                    "goal": "Explore sandwich options with familiar ingredients.",
+                    "transition_strategy": "Start with plain bread to make sandwiches with chicken; try a variety of spreads.",
+                    "food_precautions": "Verify no sesame seeds on bread or in spreads."
+                },
+                {
+                    "food": "Couscous",
+                    "goal": "Introduce a light and fluffy grain.",
+                    "transition_strategy": "Prepare simply with water, then mix with chicken and herbs.",
+                    "food_precautions": "Ensure no sesame oil or seeds in the preparation process."
+                }
+            ]
+        },
+        {
+            "category": "Vegetables",
+            "foods": [
+                {
+                    "food": "Steamed Broccoli",
+                    "goal": "Introduce green veggies slowly.",
+                    "transition_strategy": "Start with a small portion, well-cooked; integrate with chicken in stir-frys.",
+                    "food_precautions": "Ensure no sesame-based sauces are used."
+                },
+                {
+                    "food": "Mashed Potatoes",
+                    "goal": "Familiar comfort food with added nutrition.",
+                    "transition_strategy": "Starting simply with butter; later add finely minced cooked veggies.",
+                    "food_precautions": "Check for allergenic ingredients in pre-made products."
+                },
+                {
+                    "food": "Carrot Sticks",
+                    "goal": "Introduce raw vegetables for crunch.",
+                    "transition_strategy": "Serve alongside a favorite dip to enhance acceptance, avoiding sesame dips.",
+                    "food_precautions": "Cut into manageable sizes for easier eating."
+                },
+                {
+                    "food": "Zucchini Noodles",
+                    "goal": "Try a low-carb vegetable alternative.",
+                    "transition_strategy": "Start with simple noodles with olive oil; introduce chicken slowly.",
+                    "food_precautions": "Check cooking oils and sauces used."
+                }
+            ]
+        },
+        {
+            "category": "Fruits",
+            "foods": [
+                {
+                    "food": "Banana",
+                    "goal": "Introduce soft fruits for easy texture.",
+                    "transition_strategy": "Start with slices; oversee how the patient reacts, then gradually blend into smoothies.",
+                    "food_precautions": "Ensure no cross-contact with allergens."
+                },
+                {
+                    "food": "Applesauce",
+                    "goal": "Introduce fruits in a familiar form.",
+                    "transition_strategy": "Start with plain applesauce, and monitor for allergies before testing chunks of apple.",
+                    "food_precautions": "Check label for any added preservatives that might contain allergens."
+                },
+                {
+                    "food": "Berries (strawberries, blueberries)",
+                    "goal": "Introduce color and variety.",
+                    "transition_strategy": "Start with very small portions, checking for any adverse reactions.",
+                    "food_precautions": "Opt for organic if possible to avoid pesticide residues."
+                },
+                {
+                    "food": "Peach slices",
+                    "goal": "Introduce more fruit variety.",
+                    "transition_strategy": "Start with small slices; gradually combine with yogurt based dips.",
+                    "food_precautions": "Ensure no cross-contact with allergens."
+                }
+            ]
+        }
+    ],
+    "notes": [
+        {
+            "type": "Transition Strategy",
+            "content": "The patient can gradually incorporate these foods into their diet over the next 4-6 weeks. Start with the first week focusing on one new food item at a time and see how comfortable the patient feels. Increase variety slowly every week."
+        },
+        {
+            "type": "Food Precautions",
+            "content": "Always check labels and ensure cross-contamination does not occur with sesame during preparation. If any allergic reactions occur when introducing new foods, revisit the earlier strategies and consult a dietitian for further assistance."
+        }
+    ]
+}
