@@ -120,7 +120,7 @@ def start():
                     "file_ids": file_ids
                 }
             },
-            temperature=0.5
+            temperature=0.75
         )
         raw_assistant_id = assistants.id
         hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
