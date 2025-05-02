@@ -63,7 +63,7 @@ For every entry in the recommendations list, the sum of all the entry.foods list
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed.
 
-The response should be a string of JSON. Not a download file.
+The return response should be a string.
 """
 
 app.config["SESSION_TYPE"]="redis"
