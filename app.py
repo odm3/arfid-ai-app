@@ -62,6 +62,8 @@ Ensure that the final output contains exactly 20 dishes in total. Use arfid.json
 For every entry in the recommendations list, the sum of all the entry.foods list should equal 20. Keep generating responses if this is less than 20. 
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed.
+
+There should not be a download link, or file path. The response should be the text of the JSON object based on the Pydantic model ARFIDResponse.
 """
 
 app.config["SESSION_TYPE"]="redis"
@@ -121,7 +123,7 @@ def start():
                     "file_ids": file_ids
                 }
             },
-            temperature=0.75
+            temperature=0.5
         )
         raw_assistant_id = assistants.id
         hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
