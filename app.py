@@ -30,7 +30,7 @@ For each category, provide the list of recommended foods along with a brief tran
 Ensure that the final output contains exactly 15 dishes in total. Use arfid.json as an example of the expected output to be returned.
 For every entry in the recommendations list, the sum of all the entry.foods list should equal 15. Keep generating responses if this is less than 15. 
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
-The response is being provided to a web API, so just the JSON response is needed. 
+The response is being provided to a web API, so just the JSON response is needed. Do not use the word "sneak" in the recommendations.
 
 The return response should be a string of a JSON object. The JSON object needs to match the format of arfid.json The web application will parse it.  
 """
