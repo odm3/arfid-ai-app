@@ -14,106 +14,6 @@ from celery import Celery
 from celery.result import AsyncResult
 import json
 
-example_schema = """
-{
-  "name": "ARFID_Meal_Recommendations",
-  "schema": {
-    "type": "object",
-    "properties": {
-      "title": {
-        "type": "string",
-        "description": "The title of the meal recommendation schema."
-      },
-      "description": {
-        "type": "string",
-        "description": "A description of the purpose of the meal recommendations."
-      },
-      "recommendations": {
-        "type": "array",
-        "description": "A list of meal recommendations categorized by type.",
-        "items": {
-          "type": "object",
-          "properties": {
-            "category": {
-              "type": "string",
-              "description": "The category of the meal recommendations."
-            },
-            "foods": {
-              "type": "array",
-              "description": "A list of food items with their respective goals and transition strategies.",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "food": {
-                    "type": "string",
-                    "description": "The name of the food item."
-                  },
-                  "goal": {
-                    "type": "string",
-                    "description": "The intended goal of including this food item."
-                  },
-                  "transition_strategy": {
-                    "type": "string",
-                    "description": "A strategy for transitioning the patient to accept this food."
-                  },
-                  "food_precautions": {
-                   "type": "string",
-                   "description": "Precautions or considerations for the food item."
-                  }
-                },
-                "required": [
-                  "food",
-                  "goal",
-                  "transition_strategy",
-                  "food_precautions"
-                ],
-                "additionalProperties": false
-              }
-            }
-          },
-          "required": [
-            "category",
-            "foods"
-          ],
-          "additionalProperties": false
-        }
-      },
-      "notes": {
-        "type": "array",
-        "description": "Additional notes or remarks regarding the meal recommendations.",
-        "items": {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": "The type of note (e.g., caution, encouragement)."
-            },
-            "content": {
-              "type": "string",
-              "description": "The content of the note."
-            }
-          },
-          "required": [
-            "type",
-            "content"
-          ],
-          "additionalProperties": false
-        }
-      }
-    },
-    "required": [
-      "title",
-      "description",
-      "recommendations",
-      "notes"
-    ],
-    "additionalProperties": false
-  },
-  "strict": true
-}
-"""
-
-
 app = Flask(__name__)
 
 CORS(app)
@@ -194,8 +94,103 @@ def start():
             },
             response_format={
                 "type": "json_schema",
-                "json_schema": json.loads(example_schema),
+                "json_schema": {
+                    "name": "ARFID_Meal_Recommendations",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "The title of the meal recommendation schema."
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "A description of the purpose of the meal recommendations."
+                        },
+                        "recommendations": {
+                            "type": "array",
+                            "description": "A list of meal recommendations categorized by type.",
+                            "items": {
+                            "type": "object",
+                            "properties": {
+                                "category": {
+                                "type": "string",
+                                "description": "The category of the meal recommendations."
+                                },
+                                "foods": {
+                                "type": "array",
+                                "description": "A list of food items with their respective goals and transition strategies.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                    "food": {
+                                        "type": "string",
+                                        "description": "The name of the food item."
+                                    },
+                                    "goal": {
+                                        "type": "string",
+                                        "description": "The intended goal of including this food item."
+                                    },
+                                    "transition_strategy": {
+                                        "type": "string",
+                                        "description": "A strategy for transitioning the patient to accept this food."
+                                    },
+                                    "food_precautions": {
+                                    "type": "string",
+                                    "description": "Precautions or considerations for the food item."
+                                    }
+                                    },
+                                    "required": [
+                                    "food",
+                                    "goal",
+                                    "transition_strategy",
+                                    "food_precautions"
+                                    ],
+                                    "additionalProperties": False
+                                }
+                                }
+                            },
+                            "required": [
+                                "category",
+                                "foods"
+                            ],
+                            "additionalProperties": False
+                            }
+                        },
+                        "notes": {
+                            "type": "array",
+                            "description": "Additional notes or remarks regarding the meal recommendations.",
+                            "items": {
+                            "type": "object",
+                            "properties": {
+                                "type": {
+                                "type": "string",
+                                "description": "The type of note (e.g., caution, encouragement)."
+                                },
+                                "content": {
+                                "type": "string",
+                                "description": "The content of the note."
+                                }
+                            },
+                            "required": [
+                                "type",
+                                "content"
+                            ],
+                            "additionalProperties": False
+                            }
+                        }
+                    },
+                    "required": [
+                    "title",
+                    "description",
+                    "recommendations",
+                    "notes"
+                    ],
+                    "additionalProperties": False
+                },
                 "strict": True
+                }
+
             },
             reasoning_effort="medium",
             temperature=0.5
