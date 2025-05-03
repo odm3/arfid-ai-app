@@ -23,12 +23,12 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI()
 
 instructions = """
-You are an ARFID expert. Based on the patient's input for safe foods, avoided foods, and restrictions, generate exactly 20 meal recommendations. 
+You are an ARFID expert. Based on the patient's input for safe foods, avoided foods, and restrictions, generate exactly 15 meal recommendations. 
 Group the recommendations into categories that reflect the patient's input (for example, extra proteins, more vegetables, or additional snacks). 
 For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. Do not include other restrictions unless specified by user, (e.g., gluten-free, dairy-free).
 
-Ensure that the final output contains exactly 20 dishes in total. Use arfid.json as an example of the expected output to be returned.
-For every entry in the recommendations list, the sum of all the entry.foods list should equal 20. Keep generating responses if this is less than 20. 
+Ensure that the final output contains exactly 15 dishes in total. Use arfid.json as an example of the expected output to be returned.
+For every entry in the recommendations list, the sum of all the entry.foods list should equal 15. Keep generating responses if this is less than 15. 
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed. 
 
