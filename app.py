@@ -14,35 +14,104 @@ from celery import Celery
 from celery.result import AsyncResult
 import json
 
-class ARFIDNotes(BaseModel):
-    type: str
-    content: str
-
-class ARFIDFood(BaseModel):
-    food: str
-    goal: str
-    transition_strategy: str
-    food_precautions: str
-class ARFIDRecommendation(BaseModel):
-    category: str
-    foods: list[ARFIDFood]
-
-class ARFIDResponse(BaseModel):
-    title:str
-    description:str
-    recommendations: list[ARFIDRecommendation]
-
-    @model_validator(mode="after")
-    def check_recommendations(cls, values):
-        recommendations = values.get('recommendations', [])
-        if not recommendations:
-            raise ValueError("Recommendations cannot be empty")
-        total_foods = sum(len(rec.foods) for rec in recommendations)
-        if total_foods < 20:
-            raise ValueError("Total number of foods in recommendations must be at least 20")
-        return values
-    notes: list[ARFIDNotes]
-
+example_schema = """
+{
+  "name": "ARFID_Meal_Recommendations",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "title": {
+        "type": "string",
+        "description": "The title of the meal recommendation schema."
+      },
+      "description": {
+        "type": "string",
+        "description": "A description of the purpose of the meal recommendations."
+      },
+      "recommendations": {
+        "type": "array",
+        "description": "A list of meal recommendations categorized by type.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "description": "The category of the meal recommendations."
+            },
+            "foods": {
+              "type": "array",
+              "description": "A list of food items with their respective goals and transition strategies.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "food": {
+                    "type": "string",
+                    "description": "The name of the food item."
+                  },
+                  "goal": {
+                    "type": "string",
+                    "description": "The intended goal of including this food item."
+                  },
+                  "transition_strategy": {
+                    "type": "string",
+                    "description": "A strategy for transitioning the patient to accept this food."
+                  },
+                  "food_precautions": {
+                   "type": "string",
+                   "description": "Precautions or considerations for the food item."
+                  }
+                },
+                "required": [
+                  "food",
+                  "goal",
+                  "transition_strategy",
+                  "food_precautions"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "category",
+            "foods"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "notes": {
+        "type": "array",
+        "description": "Additional notes or remarks regarding the meal recommendations.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "The type of note (e.g., caution, encouragement)."
+            },
+            "content": {
+              "type": "string",
+              "description": "The content of the note."
+            }
+          },
+          "required": [
+            "type",
+            "content"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "title",
+      "description",
+      "recommendations",
+      "notes"
+    ],
+    "additionalProperties": false
+  },
+  "strict": true
+}
+"""
 
 
 app = Flask(__name__)
@@ -116,13 +185,19 @@ def start():
             name="ARFID Assistant",
             description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
             instructions=instructions,
-            model="gpt-4o-mini",
+            model="o3-mini",
             tools=[{"type": "code_interpreter"}],
             tool_resources={
                 "code_interpreter": {
                     "file_ids": file_ids
                 }
             },
+            response_format={
+                "type": "json_schema",
+                "schema": json.loads(example_schema),
+                "strict": True
+            },
+            reasoning_effort="medium",
             temperature=0.5
         )
         raw_assistant_id = assistants.id
@@ -215,9 +290,6 @@ def run_openai_task(thread_id, assistant_id):
         with app.app_context():
             run = client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
-              response_format={
-                  "type": "text"
-              },
               poll_interval_ms=10000
             )
             logger.info(f"Runs: {run}")
