@@ -192,8 +192,7 @@ def start():
                 }
 
             },
-            reasoning_effort="medium",
-            temperature=0.5
+            reasoning_effort="medium"
         )
         raw_assistant_id = assistants.id
         hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
