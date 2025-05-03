@@ -194,7 +194,7 @@ def start():
             },
             response_format={
                 "type": "json_schema",
-                "schema": json.loads(example_schema),
+                "json_schema": json.loads(example_schema),
                 "strict": True
             },
             reasoning_effort="medium",
