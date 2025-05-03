@@ -216,11 +216,7 @@ def run_openai_task(thread_id, assistant_id):
             run = client.beta.threads.runs.create_and_poll(
               thread_id=thread_id, assistant_id=assistant_id, instructions=instructions,
               response_format={
-                  "type": "json_schema",
-                  "json_schema": {
-                      "name": "arfid_schema",
-                      "schema": ARFIDResponse.model_json_schema(),
-                  }
+                  "type": "text"
               },
               poll_interval_ms=10000
             )
