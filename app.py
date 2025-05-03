@@ -57,7 +57,7 @@ redis_client = redis.from_url(os.environ.get("REDISCLOUD_URL"))
 
 ongoing_tasks = {}
 assistants = {}
-
+vector_store = client.vector_stores.create(name="ARFID Document")
 @app.before_request
 def handle_options():
     if request.method == 'OPTIONS':
@@ -71,136 +71,136 @@ def start():
         file_paths = [
             os.path.join(directory, f)
             for f in os.listdir(directory)
-            if f.endswith(".pdf") or f.endswith(".png") or f.endswith(".json")
+            if f.endswith(".pdf") or f.endswith(".json")
         ]
         file_streams = [open(path, "rb") for path in file_paths]
         
         file_ids = []
-        for file_stream in file_streams:
-            uploaded_file = client.files.create(file=file_stream, purpose="assistants")
-            file_ids.append(uploaded_file.id)  # Collect the file_id
-            file_stream.close()  # Close the file stream after uploading
-
-        assistants = client.beta.assistants.create(
-            name="ARFID Assistant",
-            description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
-            instructions=instructions,
-            model="o3-mini",
-            tools=[{"type": "code_interpreter"}],
-            tool_resources={
-                "code_interpreter": {
-                    "file_ids": file_ids
-                }
-            },
-            response_format={
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "ARFID_Meal_Recommendations",
-                    "schema": {
-                        "type": "object",
-                        "properties": {
-                        "title": {
-                            "type": "string",
-                            "description": "The title of the meal recommendation schema."
-                        },
-                        "description": {
-                            "type": "string",
-                            "description": "A description of the purpose of the meal recommendations."
-                        },
-                        "recommendations": {
-                            "type": "array",
-                            "description": "A list of meal recommendations categorized by type.",
-                            "items": {
-                            "type": "object",
-                            "properties": {
-                                "category": {
-                                "type": "string",
-                                "description": "The category of the meal recommendations."
-                                },
-                                "foods": {
-                                "type": "array",
-                                "description": "A list of food items with their respective goals and transition strategies.",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                    "food": {
-                                        "type": "string",
-                                        "description": "The name of the food item."
-                                    },
-                                    "goal": {
-                                        "type": "string",
-                                        "description": "The intended goal of including this food item."
-                                    },
-                                    "transition_strategy": {
-                                        "type": "string",
-                                        "description": "A strategy for transitioning the patient to accept this food."
-                                    },
-                                    "food_precautions": {
-                                    "type": "string",
-                                    "description": "Precautions or considerations for the food item."
-                                    }
-                                    },
-                                    "required": [
-                                    "food",
-                                    "goal",
-                                    "transition_strategy",
-                                    "food_precautions"
-                                    ],
-                                    "additionalProperties": False
-                                }
-                                }
-                            },
-                            "required": [
-                                "category",
-                                "foods"
-                            ],
-                            "additionalProperties": False
-                            }
-                        },
-                        "notes": {
-                            "type": "array",
-                            "description": "Additional notes or remarks regarding the meal recommendations.",
-                            "items": {
-                            "type": "object",
-                            "properties": {
-                                "type": {
-                                "type": "string",
-                                "description": "The type of note (e.g., caution, encouragement)."
-                                },
-                                "content": {
-                                "type": "string",
-                                "description": "The content of the note."
-                                }
-                            },
-                            "required": [
-                                "type",
-                                "content"
-                            ],
-                            "additionalProperties": False
-                            }
-                        }
-                    },
-                    "required": [
-                    "title",
-                    "description",
-                    "recommendations",
-                    "notes"
-                    ],
-                    "additionalProperties": False
-                },
-                "strict": True
-                }
-
-            },
-            reasoning_effort="medium"
+        file_batch = client.vector_stores.file_batches.upload_and_poll(
+            vector_store_id=vector_store.id, files=file_streams
         )
-        raw_assistant_id = assistants.id
-        hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
-        redis_key = f"assistant:{hashed_key}"
-        redis_client.set(redis_key, raw_assistant_id)
-        session['assistant_key'] = hashed_key
-        logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
-        return jsonify({"assistant_key": hashed_key}), 200
+        # for file_stream in file_streams:
+        #     uploaded_file = client.files.create(file=file_stream, purpose="assistants")
+        #     file_ids.append(uploaded_file.id)  # Collect the file_id
+        #     file_stream.close()  # Close the file stream after uploading
+
+        if file_batch.status == "completed":
+            assistants = client.beta.assistants.create(
+                name="ARFID Assistant",
+                description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
+                instructions=instructions,
+                model="o3-mini",
+                tools=[{"type": "file_search"}],
+                tool_resources={"file_search": {"vector_store_ids": [vector_store.id]}},
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "ARFID_Meal_Recommendations",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                            "title": {
+                                "type": "string",
+                                "description": "The title of the meal recommendation schema."
+                            },
+                            "description": {
+                                "type": "string",
+                                "description": "A description of the purpose of the meal recommendations."
+                            },
+                            "recommendations": {
+                                "type": "array",
+                                "description": "A list of meal recommendations categorized by type.",
+                                "items": {
+                                "type": "object",
+                                "properties": {
+                                    "category": {
+                                    "type": "string",
+                                    "description": "The category of the meal recommendations."
+                                    },
+                                    "foods": {
+                                    "type": "array",
+                                    "description": "A list of food items with their respective goals and transition strategies.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                        "food": {
+                                            "type": "string",
+                                            "description": "The name of the food item."
+                                        },
+                                        "goal": {
+                                            "type": "string",
+                                            "description": "The intended goal of including this food item."
+                                        },
+                                        "transition_strategy": {
+                                            "type": "string",
+                                            "description": "A strategy for transitioning the patient to accept this food."
+                                        },
+                                        "food_precautions": {
+                                        "type": "string",
+                                        "description": "Precautions or considerations for the food item."
+                                        }
+                                        },
+                                        "required": [
+                                        "food",
+                                        "goal",
+                                        "transition_strategy",
+                                        "food_precautions"
+                                        ],
+                                        "additionalProperties": False
+                                    }
+                                    }
+                                },
+                                "required": [
+                                    "category",
+                                    "foods"
+                                ],
+                                "additionalProperties": False
+                                }
+                            },
+                            "notes": {
+                                "type": "array",
+                                "description": "Additional notes or remarks regarding the meal recommendations.",
+                                "items": {
+                                "type": "object",
+                                "properties": {
+                                    "type": {
+                                    "type": "string",
+                                    "description": "The type of note (e.g., caution, encouragement)."
+                                    },
+                                    "content": {
+                                    "type": "string",
+                                    "description": "The content of the note."
+                                    }
+                                },
+                                "required": [
+                                    "type",
+                                    "content"
+                                ],
+                                "additionalProperties": False
+                                }
+                            }
+                        },
+                        "required": [
+                        "title",
+                        "description",
+                        "recommendations",
+                        "notes"
+                        ],
+                        "additionalProperties": False
+                    },
+                    "strict": True
+                    }
+
+                },
+                reasoning_effort="medium"
+            )
+            raw_assistant_id = assistants.id
+            hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
+            redis_key = f"assistant:{hashed_key}"
+            redis_client.set(redis_key, raw_assistant_id)
+            session['assistant_key'] = hashed_key
+            logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
+            return jsonify({"assistant_key": hashed_key}), 200
     except Exception as e:
         logger.error(f"Error in /api/start: {str(e)}")
         return jsonify({"error": str(e)}), 500
