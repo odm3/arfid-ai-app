@@ -63,7 +63,7 @@ For every entry in the recommendations list, the sum of all the entry.foods list
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed.
 
-The return response should be a string. The code intrepeter tool should not generate a download link. A string should be the response from the assistant. 
+The return response should be a string of a JSON object. The web application will parse it.  
 """
 
 app.config["SESSION_TYPE"]="redis"
