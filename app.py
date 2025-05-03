@@ -63,7 +63,7 @@ For every entry in the recommendations list, the sum of all the entry.foods list
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed.
 
-The return response should be a string of a JSON object. The web application will parse it.  
+The return response should be a string of a JSON object. The JSON object needs to match the format of arfid.json The web application will parse it.  
 """
 
 app.config["SESSION_TYPE"]="redis"
