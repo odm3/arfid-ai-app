@@ -32,6 +32,8 @@ For every entry in the recommendations list, the sum of all the entry.foods list
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed. Do not use the word "sneak" in the recommendations.
 
+In addition, the response should take a subset of recommendations and rank them in ease of implementation, accomplishment, and preparation. This should include 5 of the 20 provided recommendations. 
+
 The return response should be a string of a JSON object. The JSON object needs to match the format of arfid.json The web application will parse it.  
 """
 
@@ -161,30 +163,64 @@ def start():
                                 "type": "array",
                                 "description": "Additional notes or remarks regarding the meal recommendations.",
                                 "items": {
-                                "type": "object",
-                                "properties": {
-                                    "type": {
-                                    "type": "string",
-                                    "description": "The type of note (e.g., caution, encouragement)."
+                                    "type": "object",
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "description": "The type of note (e.g., caution, encouragement)."
+                                        },
+                                        "content": {
+                                            "type": "string",
+                                            "description": "The content of the note."
+                                        }
                                     },
-                                    "content": {
-                                    "type": "string",
-                                    "description": "The content of the note."
-                                    }
+                                    "required": [
+                                        "type",
+                                        "content"
+                                    ],
+                                    "additionalProperties": False
+                                }
+                            },
+                            "recommendation_ease": {
+                                "type": "array",
+                                "description": "A list of recommendations with their ease of implementation.",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "Recommendation": {
+                                            "type": "string",
+                                            "description": "The recommendation for the patient."
+                                        },
+                                        "Ease": {
+                                            "type": "string",
+                                            "description": "An explanation of why the recommendation is easy to implement."
+                                        },
+                                        "Accomplishment": {
+                                            "type": "string",
+                                            "description": "An explanation of what the recommendation accomplishes."
+                                        },
+                                        "Preparation": {
+                                            "type": "string",
+                                            "description": "An explanation of how the recommendation can be prepared.",
+                                        }
+                                    
                                 },
                                 "required": [
-                                    "type",
-                                    "content"
+                                    "Recommendation",
+                                    "Ease",
+                                    "Accomplishment",
+                                    "Preparation"
                                 ],
                                 "additionalProperties": False
                                 }
-                            }
+                            },
                         },
                         "required": [
                         "title",
                         "description",
                         "recommendations",
                         "notes"
+                        "recommendation_ease"
                         ],
                         "additionalProperties": False
                     },
