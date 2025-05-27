@@ -216,11 +216,11 @@ def start():
                             },
                         },
                         "required": [
-                        "title",
-                        "description",
-                        "recommendations",
-                        "notes"
-                        "recommendation_ease"
+                            "title",
+                            "description",
+                            "recommendations",
+                            "notes",
+                            "recommendation_ease"
                         ],
                         "additionalProperties": False
                     },
