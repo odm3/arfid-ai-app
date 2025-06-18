@@ -206,10 +206,10 @@ def start():
                                     
                                 },
                                 "required": [
-                                    "Recommendation",
-                                    "Ease",
-                                    "Accomplishment",
-                                    "Preparation"
+                                    "recommendation",
+                                    "ease",
+                                    "accomplishment",
+                                    "preparation"
                                 ],
                                 "additionalProperties": False
                                 }
