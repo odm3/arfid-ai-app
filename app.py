@@ -187,19 +187,19 @@ def start():
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "Recommendation": {
+                                        "recommendation": {
                                             "type": "string",
                                             "description": "The recommendation for the patient."
                                         },
-                                        "Ease": {
+                                        "ease": {
                                             "type": "string",
                                             "description": "An explanation of why the recommendation is easy to implement."
                                         },
-                                        "Accomplishment": {
+                                        "accomplishment": {
                                             "type": "string",
                                             "description": "An explanation of what the recommendation accomplishes."
                                         },
-                                        "Preparation": {
+                                        "preparation": {
                                             "type": "string",
                                             "description": "An explanation of how the recommendation can be prepared.",
                                         }
