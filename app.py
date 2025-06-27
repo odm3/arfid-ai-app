@@ -32,7 +32,7 @@ For every entry in the recommendations list, the sum of all the entry.foods list
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed. Do not use the word "sneak" in the recommendations.
 
-In the allergy considerations, do not provide general safety information.
+In the allergy considerations, do not provide general safety information. This should be specific to the food items recommended and the patient's entered allergies or restrictions. You should check whether the food item could potentially contain an allergen that the user has specified (e.g, no peanut butter if the user has a peanut allergy). 
 
 In addition, the response should take a subset of recommendations and rank them in ease of implementation, accomplishment, and preparation. This should include 5 of the 20 provided recommendations. 
 
