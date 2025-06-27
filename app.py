@@ -25,12 +25,14 @@ client = OpenAI()
 instructions = """
 You are an ARFID expert. Based on the patient's input for safe foods, avoided foods, and restrictions, generate exactly 15 meal recommendations. 
 Group the recommendations into categories that reflect the patient's input (for example, extra proteins, more vegetables, or additional snacks). 
-For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. Do not include other food restrictions or any allergy considerations unless specified by the user.
+For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. Do not include other food restrictions or any allergy considerations unless specified by the user. 
 
 Ensure that the final output contains exactly 15 dishes in total. Use arfid.json as an example of the expected output to be returned.
 For every entry in the recommendations list, the sum of all the entry.foods list should equal 15. Keep generating responses if this is less than 15. 
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed. Do not use the word "sneak" in the recommendations.
+
+In the allergy considerations, do not provide general safety information.
 
 In addition, the response should take a subset of recommendations and rank them in ease of implementation, accomplishment, and preparation. This should include 5 of the 20 provided recommendations. 
 
@@ -137,7 +139,7 @@ def start():
                                             "type": "string",
                                             "description": "A strategy for transitioning the patient to accept this food."
                                         },
-                                        "food_precautions": {
+                                        "allergy_considerations": {
                                         "type": "string",
                                         "description": "Precautions or considerations for the food item."
                                         }
@@ -146,7 +148,7 @@ def start():
                                         "food",
                                         "goal",
                                         "transition_strategy",
-                                        "food_precautions"
+                                        "allergy_considerations"
                                         ],
                                         "additionalProperties": False
                                     }
