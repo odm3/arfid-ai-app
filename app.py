@@ -69,179 +69,237 @@ def handle_options():
         # Flask-CORS will handle OPTIONS automatically.
         return '', 200
     
-@app.route("/api/start", methods=["GET"])
-def start():
-    try: 
-        directory = "./files"
-        file_paths = [
-            os.path.join(directory, f)
-            for f in os.listdir(directory)
-            if f.endswith(".pdf") or f.endswith(".json")
-        ]
-        file_streams = [open(path, "rb") for path in file_paths]
-        
-        file_ids = []
-        file_batch = client.vector_stores.file_batches.upload_and_poll(
-            vector_store_id=vector_store.id, files=file_streams
-        )
-        # for file_stream in file_streams:
-        #     uploaded_file = client.files.create(file=file_stream, purpose="assistants")
-        #     file_ids.append(uploaded_file.id)  # Collect the file_id
-        #     file_stream.close()  # Close the file stream after uploading
-
-        if file_batch.status == "completed":
-            assistants = client.beta.assistants.create(
-                name="ARFID Assistant",
-                description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
-                instructions=instructions,
-                model="o3-mini",
-                tools=[{"type": "file_search"}],
-                tool_resources={"file_search": {"vector_store_ids": [vector_store.id]}},
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": "ARFID_Meal_Recommendations",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                            "title": {
-                                "type": "string",
-                                "description": "The title of the meal recommendation schema."
-                            },
-                            "description": {
-                                "type": "string",
-                                "description": "A description of the purpose of the meal recommendations."
-                            },
-                            "recommendations": {
-                                "type": "array",
-                                "description": "A list of meal recommendations categorized by type.",
-                                "items": {
-                                "type": "object",
-                                "properties": {
-                                    "category": {
-                                    "type": "string",
-                                    "description": "The category of the meal recommendations."
-                                    },
-                                    "foods": {
-                                    "type": "array",
-                                    "description": "A list of food items with their respective goals and transition strategies.",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                        "food": {
-                                            "type": "string",
-                                            "description": "The name of the food item."
-                                        },
-                                        "goal": {
-                                            "type": "string",
-                                            "description": "The intended goal of including this food item."
-                                        },
-                                        "transition_strategy": {
-                                            "type": "string",
-                                            "description": "A strategy for transitioning the patient to accept this food."
-                                        },
-                                        "allergy_considerations": {
-                                        "type": "string",
-                                        "description": "Precautions or considerations for the food item."
-                                        }
-                                        },
-                                        "required": [
-                                        "food",
-                                        "goal",
-                                        "transition_strategy",
-                                        "allergy_considerations"
-                                        ],
-                                        "additionalProperties": False
-                                    }
-                                    }
-                                },
-                                "required": [
-                                    "category",
-                                    "foods"
-                                ],
-                                "additionalProperties": False
-                                }
-                            },
-                            "notes": {
-                                "type": "array",
-                                "description": "Additional notes or remarks regarding the meal recommendations.",
-                                "items": {
+@celery.task
+def setup_assistant_task():
+    """Background task to set up the assistant with file uploads"""
+    logger.info("Starting assistant setup task...")
+    try:
+        with app.app_context():
+            directory = "./files"
+            file_paths = [
+                os.path.join(directory, f)
+                for f in os.listdir(directory)
+                if f.endswith(".pdf") or f.endswith(".json")
+            ]
+            
+            if not file_paths:
+                logger.warning("No PDF or JSON files found in ./files directory")
+                return {"error": "No files found to upload"}
+            
+            file_streams = [open(path, "rb") for path in file_paths]
+            
+            try:
+                file_batch = client.vector_stores.file_batches.upload_and_poll(
+                    vector_store_id=vector_store.id, files=file_streams
+                )
+                
+                if file_batch.status == "completed":
+                    assistants = client.beta.assistants.create(
+                        name="ARFID Assistant",
+                        description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
+                        instructions=instructions,
+                        model="o3-mini",
+                        tools=[{"type": "file_search"}],
+                        tool_resources={"file_search": {"vector_store_ids": [vector_store.id]}},
+                        response_format={
+                            "type": "json_schema",
+                            "json_schema": {
+                                "name": "ARFID_Meal_Recommendations",
+                                "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "type": {
+                                        "title": {
                                             "type": "string",
-                                            "description": "The type of note (e.g., caution, encouragement)."
+                                            "description": "The title of the meal recommendation schema."
                                         },
-                                        "content": {
+                                        "description": {
                                             "type": "string",
-                                            "description": "The content of the note."
+                                            "description": "A description of the purpose of the meal recommendations."
+                                        },
+                                        "recommendations": {
+                                            "type": "array",
+                                            "description": "A list of meal recommendations categorized by type.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "category": {
+                                                        "type": "string",
+                                                        "description": "The category of the meal recommendations."
+                                                    },
+                                                    "foods": {
+                                                        "type": "array",
+                                                        "description": "A list of food items with their respective goals and transition strategies.",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "food": {
+                                                                    "type": "string",
+                                                                    "description": "The name of the food item."
+                                                                },
+                                                                "goal": {
+                                                                    "type": "string",
+                                                                    "description": "The intended goal of including this food item."
+                                                                },
+                                                                "transition_strategy": {
+                                                                    "type": "string",
+                                                                    "description": "A strategy for transitioning the patient to accept this food."
+                                                                },
+                                                                "allergy_considerations": {
+                                                                    "type": "string",
+                                                                    "description": "Precautions or considerations for the food item."
+                                                                }
+                                                            },
+                                                            "required": [
+                                                                "food",
+                                                                "goal",
+                                                                "transition_strategy",
+                                                                "allergy_considerations"
+                                                            ],
+                                                            "additionalProperties": False
+                                                        }
+                                                    }
+                                                },
+                                                "required": [
+                                                    "category",
+                                                    "foods"
+                                                ],
+                                                "additionalProperties": False
+                                            }
+                                        },
+                                        "notes": {
+                                            "type": "array",
+                                            "description": "Additional notes or remarks regarding the meal recommendations.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "type": {
+                                                        "type": "string",
+                                                        "description": "The type of note (e.g., caution, encouragement)."
+                                                    },
+                                                    "content": {
+                                                        "type": "string",
+                                                        "description": "The content of the note."
+                                                    }
+                                                },
+                                                "required": [
+                                                    "type",
+                                                    "content"
+                                                ],
+                                                "additionalProperties": False
+                                            }
+                                        },
+                                        "recommendation_ease": {
+                                            "type": "array",
+                                            "description": "A list of recommendations with their ease of implementation.",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "recommendation": {
+                                                        "type": "string",
+                                                        "description": "The recommendation for the patient."
+                                                    },
+                                                    "ease": {
+                                                        "type": "string",
+                                                        "description": "An explanation of why the recommendation is easy to implement."
+                                                    },
+                                                    "accomplishment": {
+                                                        "type": "string",
+                                                        "description": "An explanation of what the recommendation accomplishes."
+                                                    },
+                                                    "preparation": {
+                                                        "type": "string",
+                                                        "description": "An explanation of how the recommendation can be prepared."
+                                                    }
+                                                },
+                                                "required": [
+                                                    "recommendation",
+                                                    "ease",
+                                                    "accomplishment",
+                                                    "preparation"
+                                                ],
+                                                "additionalProperties": False
+                                            }
                                         }
                                     },
                                     "required": [
-                                        "type",
-                                        "content"
+                                        "title",
+                                        "description",
+                                        "recommendations",
+                                        "notes",
+                                        "recommendation_ease"
                                     ],
                                     "additionalProperties": False
-                                }
-                            },
-                            "recommendation_ease": {
-                                "type": "array",
-                                "description": "A list of recommendations with their ease of implementation.",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "recommendation": {
-                                            "type": "string",
-                                            "description": "The recommendation for the patient."
-                                        },
-                                        "ease": {
-                                            "type": "string",
-                                            "description": "An explanation of why the recommendation is easy to implement."
-                                        },
-                                        "accomplishment": {
-                                            "type": "string",
-                                            "description": "An explanation of what the recommendation accomplishes."
-                                        },
-                                        "preparation": {
-                                            "type": "string",
-                                            "description": "An explanation of how the recommendation can be prepared.",
-                                        }
-                                    
                                 },
-                                "required": [
-                                    "recommendation",
-                                    "ease",
-                                    "accomplishment",
-                                    "preparation"
-                                ],
-                                "additionalProperties": False
-                                }
-                            },
+                                "strict": True
+                            }
                         },
-                        "required": [
-                            "title",
-                            "description",
-                            "recommendations",
-                            "notes",
-                            "recommendation_ease"
-                        ],
-                        "additionalProperties": False
-                    },
-                    "strict": True
-                    }
-
-                },
-                reasoning_effort="medium"
-            )
-            raw_assistant_id = assistants.id
-            hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
-            redis_key = f"assistant:{hashed_key}"
-            redis_client.set(redis_key, raw_assistant_id)
-            session['assistant_key'] = hashed_key
-            logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
-            return jsonify({"assistant_key": hashed_key}), 200
+                        reasoning_effort="medium"
+                    )
+                    
+                    raw_assistant_id = assistants.id
+                    hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
+                    redis_key = f"assistant:{hashed_key}"
+                    redis_client.set(redis_key, raw_assistant_id)
+                    logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
+                    
+                    return {"assistant_key": hashed_key, "status": "completed"}
+                else:
+                    return {"error": f"File upload failed with status: {file_batch.status}"}
+                    
+            finally:
+                # Always close file streams
+                for stream in file_streams:
+                    stream.close()
+                    
     except Exception as e:
-        logger.error(f"Error in /api/start: {str(e)}")
+        logger.error(f"Error in setup_assistant_task: {str(e)}")
+        return {"error": str(e)}
+
+@app.route("/api/start", methods=["GET"])
+def start():
+    """Start assistant setup as a background task"""
+    try:
+        # Start the background task
+        task = setup_assistant_task.apply_async()
+        return jsonify({"task_id": task.id, "status": "started"}), 202
+    except Exception as e:
+        logger.error(f"Error starting assistant setup: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/start/status/<task_id>", methods=["GET"])
+def get_start_status(task_id):
+    """Check the status of the assistant setup task"""
+    try:
+        task = AsyncResult(task_id, app=celery)
+        
+        if task.state == 'PENDING':
+            response = {
+                'state': task.state,
+                'status': 'Setting up assistant...',
+                'progress': 'Uploading files and creating assistant'
+            }
+        elif task.state == 'SUCCESS':
+            result = task.result
+            if isinstance(result, dict) and 'assistant_key' in result:
+                response = {
+                    'state': task.state,
+                    'assistant_key': result['assistant_key'],
+                    'status': 'Assistant ready'
+                }
+            else:
+                response = {
+                    'state': 'FAILURE',
+                    'error': result.get('error', 'Unknown error')
+                }
+        else:
+            response = {
+                'state': task.state,
+                'error': str(task.info) if task.info else 'Task failed'
+            }
+            
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Error checking task status: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/end", methods=["POST"])
