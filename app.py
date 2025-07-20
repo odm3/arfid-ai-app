@@ -23,7 +23,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 client = OpenAI()
 
 instructions = """
-You are an ARFID expert. Based on the imputed safe foods, avoided foods, and restrictions, generate exactly 15 meal recommendations. Each recommendation should build on one of the safe foods or provide an alternative to one of the avoided or restricted foods.
+You are an ARFID expert. Based on the imputed safe foods, avoided foods, and restrictions, generate exactly 15 meal recommendations. Each recommendation should build on one of the safe foods or provide an alternative to one of the avoided foods.
 Group the recommendations into categories that reflect the input (for example, extra proteins, more vegetables, or additional snacks). 
 For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. Do not include other food restrictions or any allergy considerations unless specified by the user.
 Provide output at around a 6th grade reading level. 
@@ -293,8 +293,11 @@ def create_message():
                 thread_id=thread.id, role="user", content=f"Do not include these foods patient doesn't like or eats: {prompt2}"
             )
             client.beta.threads.messages.create(
-                thread_id=thread.id, role="user", content=f"Patient is alleric or has restrictions and can't eat: {prompt3}"
+                thread_id=thread.id, role="user", content=f"Each recommendation should build on one of these foods {prompt1} or provide an alternative to one of these foods {prompt2}"
             )
+            client.beta.threads.messages.create(
+                thread_id=thread.id, role="user", content=f"Patient is allergic or has restrictions and can't eat: {prompt3}"
+            ) 
         else: 
             thread_id = os.environ.get("THREAD_ID") or session.get("THREAD_ID")
             client.beta.threads.messages.create(
