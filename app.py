@@ -266,10 +266,15 @@ def start():
         logger.error(f"Error starting assistant setup: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/start/status/<task_id>", methods=["GET"])
-def get_start_status(task_id):
+@app.route("/api/start/status", methods=["POST"])
+def get_start_status():
     """Check the status of the assistant setup task"""
     try:
+        data = request.get_json()
+        task_id = data.get("task_id")
+        if not task_id:
+            return jsonify({"error": "No task ID provided"}), 400
+
         task = AsyncResult(task_id, app=celery)
         
         if task.state == 'PENDING':
