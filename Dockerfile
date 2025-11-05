@@ -17,7 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY app.py .
-COPY files/ ./files/
 
 # Expose port (Lightsail will map this)
 EXPOSE 8000

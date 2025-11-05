@@ -62,7 +62,11 @@ redis_client = redis.from_url(os.environ.get("REDIS_URL"))
 
 ongoing_tasks = {}
 assistants = {}
-vector_store = client.vector_stores.create(name="ARFID Document")
+
+# Vector store ID from pre-uploaded PDFs (set via environment variable)
+# This is created once by running: python scripts/upload-pdfs-to-openai.py
+OPENAI_VECTOR_STORE_ID = os.environ.get("OPENAI_VECTOR_STORE_ID")
+
 @app.before_request
 def handle_options():
     if request.method == 'OPTIONS':
@@ -71,37 +75,26 @@ def handle_options():
     
 @celery.task
 def setup_assistant_task():
-    """Background task to set up the assistant with file uploads"""
+    """Background task to set up the assistant using pre-uploaded files"""
     logger.info("Starting assistant setup task...")
     try:
         with app.app_context():
-            directory = "./files"
-            file_paths = [
-                os.path.join(directory, f)
-                for f in os.listdir(directory)
-                if f.endswith(".pdf") or f.endswith(".json")
-            ]
-            
-            if not file_paths:
-                logger.warning("No PDF or JSON files found in ./files directory")
-                return {"error": "No files found to upload"}
-            
-            file_streams = [open(path, "rb") for path in file_paths]
-            
-            try:
-                file_batch = client.vector_stores.file_batches.upload_and_poll(
-                    vector_store_id=vector_store.id, files=file_streams
-                )
-                
-                if file_batch.status == "completed":
-                    assistants = client.beta.assistants.create(
-                        name="ARFID Assistant",
-                        description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
-                        instructions=instructions,
-                        model="o3-mini",
-                        tools=[{"type": "file_search"}],
-                        tool_resources={"file_search": {"vector_store_ids": [vector_store.id]}},
-                        response_format={
+            # Check if vector store ID is configured
+            if not OPENAI_VECTOR_STORE_ID:
+                logger.error("OPENAI_VECTOR_STORE_ID environment variable not set")
+                return {"error": "Vector store not configured. Please run scripts/upload-pdfs-to-openai.py and set OPENAI_VECTOR_STORE_ID in GitHub Secrets."}
+
+            logger.info(f"Using pre-uploaded vector store: {OPENAI_VECTOR_STORE_ID}")
+
+            # Create assistant with existing vector store (no file upload needed!)
+            assistants = client.beta.assistants.create(
+                name="ARFID Assistant",
+                description="This tool assists medical professionals and patients with identifying food options for patients with ARFID.",
+                instructions=instructions,
+                model="o3-mini",
+                tools=[{"type": "file_search"}],
+                tool_resources={"file_search": {"vector_store_ids": [OPENAI_VECTOR_STORE_ID]}},
+                response_format={
                             "type": "json_schema",
                             "json_schema": {
                                 "name": "ARFID_Meal_Recommendations",
@@ -243,14 +236,7 @@ def setup_assistant_task():
                     logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
                     
                     return {"assistant_key": hashed_key, "status": "completed"}
-                else:
-                    return {"error": f"File upload failed with status: {file_batch.status}"}
-                    
-            finally:
-                # Always close file streams
-                for stream in file_streams:
-                    stream.close()
-                    
+
     except Exception as e:
         logger.error(f"Error in setup_assistant_task: {str(e)}")
         return {"error": str(e)}

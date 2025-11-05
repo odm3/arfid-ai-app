@@ -102,3 +102,6 @@ SETUP_GUIDE.md
 .github/workflows/deploy-lightsail-legacy.yml.disabled
 .github/workflows/pr-test.yml
 cloudformation/README.md
+
+# PDF files (uploaded to OpenAI vector store)
+files/*.pdf

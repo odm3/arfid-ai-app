@@ -265,6 +265,7 @@ jobs:
           WEB_IMAGE: ${{ steps.push-web.outputs.web_image }}
           WORKER_IMAGE: ${{ steps.push-worker.outputs.worker_image }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_VECTOR_STORE_ID: ${{ secrets.OPENAI_VECTOR_STORE_ID }}
           FLASK_SECRET_KEY: ${{ secrets.FLASK_SECRET_KEY }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
         run: |
@@ -280,6 +281,7 @@ jobs:
               },
               "environment": {
                 "OPENAI_API_KEY": "$OPENAI_API_KEY",
+                "OPENAI_VECTOR_STORE_ID": "$OPENAI_VECTOR_STORE_ID",
                 "FLASK_SECRET_KEY": "$FLASK_SECRET_KEY",
                 "REDIS_URL": "$REDIS_URL"
               }
@@ -288,6 +290,7 @@ jobs:
               "image": "$WORKER_IMAGE",
               "environment": {
                 "OPENAI_API_KEY": "$OPENAI_API_KEY",
+                "OPENAI_VECTOR_STORE_ID": "$OPENAI_VECTOR_STORE_ID",
                 "FLASK_SECRET_KEY": "$FLASK_SECRET_KEY",
                 "REDIS_URL": "$REDIS_URL"
               }
@@ -299,6 +302,7 @@ jobs:
           sed -i "s|\$WEB_IMAGE|$WEB_IMAGE|g" containers.json
           sed -i "s|\$WORKER_IMAGE|$WORKER_IMAGE|g" containers.json
           sed -i "s|\$OPENAI_API_KEY|$OPENAI_API_KEY|g" containers.json
+          sed -i "s|\$OPENAI_VECTOR_STORE_ID|$OPENAI_VECTOR_STORE_ID|g" containers.json
           sed -i "s|\$FLASK_SECRET_KEY|$FLASK_SECRET_KEY|g" containers.json
           sed -i "s|\$REDIS_URL|$REDIS_URL|g" containers.json
 
