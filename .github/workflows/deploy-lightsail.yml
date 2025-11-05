@@ -50,7 +50,7 @@ jobs:
       id-token: write # Required for OIDC
       contents: read
     outputs:
-      service_name: ${{ steps.cfn.outputs.service_name }}
+      service_name: ${{ env.LIGHTSAIL_SERVICE_NAME }}
       service_url: ${{ steps.cfn.outputs.service_url }}
 
     steps:
@@ -128,7 +128,7 @@ jobs:
 
       - name: Wait for Lightsail service to be ready
         env:
-          SERVICE_NAME: ${{ steps.cfn.outputs.service_name }}
+          SERVICE_NAME: ${{ env.LIGHTSAIL_SERVICE_NAME }}
         run: |
           echo "Waiting for Lightsail service to be ready..."
           for i in {1..30}; do
