@@ -8,10 +8,10 @@ import time
 from openai import OpenAI
 import os
 from datetime import datetime, timedelta
-import redis
 import hashlib
 from celery import Celery
 from celery.result import AsyncResult
+import redis
 import json
 
 app = Flask(__name__)
@@ -45,11 +45,11 @@ app.config["SESSION_TYPE"]="redis"
 app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_USE_SIGNER"]=True
 app.config["SESSION_KEY_PREFIX"]="flask_session:"
-app.config["SESSION_REDIS"]=redis.from_url(os.environ.get("REDISCLOUD_URL"))
+app.config["SESSION_REDIS"]=redis.from_url(os.environ.get("REDIS_URL"))
 app.config["SECRET_KEY"]=os.environ.get("FLASK_SECRET_KEY")
 app.config.update(
-    CELERY_BROKER_URL=os.environ.get("REDISCLOUD_URL"),
-    CELERY_RESULT_BACKEND=os.environ.get("REDISCLOUD_URL"),
+    CELERY_BROKER_URL=os.environ.get("REDIS_URL"),
+    CELERY_RESULT_BACKEND=os.environ.get("REDIS_URL"),
 )
 Session(app)
 celery = Celery(
@@ -57,7 +57,7 @@ celery = Celery(
     backend=app.config["CELERY_RESULT_BACKEND"],
     broker=app.config["CELERY_BROKER_URL"]
 )
-redis_client = redis.from_url(os.environ.get("REDISCLOUD_URL"))
+redis_client = redis.from_url(os.environ.get("REDIS_URL"))
 
 
 ongoing_tasks = {}

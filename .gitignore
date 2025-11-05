@@ -92,3 +92,13 @@ vercel/
 .DS_Store
 .DS_Store
 .DS_Store
+.env.example
+CHANGELOG.md
+docker-compose.yml
+LIGHTSAIL_DEPLOYMENT.md
+QUICKSTART_OIDC.md
+REDIS_SETUP.md
+SETUP_GUIDE.md
+.github/workflows/deploy-lightsail-legacy.yml.disabled
+.github/workflows/pr-test.yml
+cloudformation/README.md

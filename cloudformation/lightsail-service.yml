@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  AWS Lightsail container service for ARFID meal recommendation app.
+  Deploys Flask web app + Celery worker containers.
+
+Parameters:
+  ServiceName:
+    Type: String
+    Description: Lightsail container service name (must be unique in region)
+    Default: arfid-app
+
+  Power:
+    Type: String
+    Default: micro
+    AllowedValues: [nano, micro, small, medium, large, xlarge, 2xlarge]
+    Description: >
+      Lightsail power plan (CPU/RAM).
+      nano = 0.25 vCPU, 512 MB ($7/mo)
+      micro = 0.25 vCPU, 1 GB ($10/mo) - Recommended
+      small = 0.5 vCPU, 2 GB ($40/mo)
+
+  Scale:
+    Type: Number
+    Default: 1
+    MinValue: 1
+    MaxValue: 20
+    Description: Number of container replicas (horizontal scaling)
+
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [production, staging, development]
+    Description: Environment name for tagging
+
+  HealthCheckPath:
+    Type: String
+    Default: /api/start
+    Description: HTTP path used to determine container health
+
+  ContainerPort:
+    Type: Number
+    Default: 8000
+    Description: Port exposed by Flask application
+
+  PublicDomainName:
+    Type: String
+    Default: ""
+    Description: Optional custom domain name (e.g., arfid.yourdomain.com). Leave empty for default Lightsail domain.
+
+Conditions:
+  HasCustomDomain: !Not [!Equals [!Ref PublicDomainName, ""]]
+
+Resources:
+  # Main Lightsail Container Service
+  ARFIDContainerService:
+    Type: AWS::Lightsail::Container
+    Properties:
+      ServiceName: !Ref ServiceName
+      Power: !Ref Power
+      Scale: !Ref Scale
+      IsDisabled: false
+      PublicDomainNames:
+        - !If
+          - HasCustomDomain
+          - CertificateName: !Sub "${ServiceName}-cert"
+            DomainNames:
+              - !Ref PublicDomainName
+          - !Ref "AWS::NoValue"
+      Tags:
+        - Key: Name
+          Value: !Ref ServiceName
+        - Key: Application
+          Value: ARFID
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: CostCenter
+          Value: Healthcare
+
+  # SSL Certificate (if custom domain specified)
+  ARFIDCertificate:
+    Type: AWS::Lightsail::Certificate
+    Condition: HasCustomDomain
+    Properties:
+      CertificateName: !Sub "${ServiceName}-cert"
+      DomainName: !Ref PublicDomainName
+      Tags:
+        - Key: Name
+          Value: !Sub "${ServiceName}-cert"
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  ServiceName:
+    Description: Lightsail container service name
+    Value: !Ref ARFIDContainerService
+    Export:
+      Name: !Sub "${AWS::StackName}-ServiceName"
+
+  ServiceUrl:
+    Description: Public URL for the ARFID application
+    Value: !GetAtt ARFIDContainerService.Url
+    Export:
+      Name: !Sub "${AWS::StackName}-ServiceUrl"
+
+  ServiceArn:
+    Description: ARN of the Lightsail container service
+    Value: !GetAtt ARFIDContainerService.ContainerServiceArn
+    Export:
+      Name: !Sub "${AWS::StackName}-ServiceArn"
+
+  FullUrl:
+    Description: Full HTTPS URL to access the application
+    Value: !Sub "https://${ARFIDContainerService.Url}"
+
+  ContainerPort:
+    Description: Container port for web service
+    Value: !Ref ContainerPort
+    Export:
+      Name: !Sub "${AWS::StackName}-ContainerPort"
+
+  HealthCheckPath:
+    Description: Health check endpoint
+    Value: !Ref HealthCheckPath
+    Export:
+      Name: !Sub "${AWS::StackName}-HealthCheckPath"
+
+  EstimatedMonthlyCost:
+    Description: Estimated monthly cost in USD (per instance)
+    Value: !If
+      - !Equals [!Ref Power, "nano"]
+      - "$7"
+      - !If
+        - !Equals [!Ref Power, "micro"]
+        - "$10"
+        - !If
+          - !Equals [!Ref Power, "small"]
+          - "$40"
+          - !If
+            - !Equals [!Ref Power, "medium"]
+            - "$80"
+            - !If
+              - !Equals [!Ref Power, "large"]
+              - "$160"
+              - "$320+"
+
+  TotalMonthlyCost:
+    Description: Total estimated monthly cost (Cost × Scale)
+    Value: !Sub "${Power} × ${Scale} instances"
+
+  ManagementConsoleUrl:
+    Description: Direct link to Lightsail console
+    Value: !Sub "https://lightsail.aws.amazon.com/ls/webapp/${AWS::Region}/container-services/${ServiceName}"
+
+  DeploymentCommand:
+    Description: Next steps - Deploy containers with this command
+    Value: !Sub |
+      # Build and push Docker images:
+      docker build -t arfid-web:latest -f Dockerfile .
+      docker build -t arfid-worker:latest -f Dockerfile.worker .
+
+      aws lightsail push-container-image --service-name ${ServiceName} --label arfid-web --image arfid-web:latest
+      aws lightsail push-container-image --service-name ${ServiceName} --label arfid-worker --image arfid-worker:latest
+
+      # Create deployment:
+      aws lightsail create-container-service-deployment --service-name ${ServiceName} --cli-input-json file://lightsail-deployment.json
