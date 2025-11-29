@@ -105,7 +105,7 @@ def setup_assistant_task():
                 logger.error("OPENAI_VECTOR_STORE_ID environment variable not set")
                 return {"error": "Vector store not configured. Please run scripts/upload-pdfs-to-openai.py and set OPENAI_VECTOR_STORE_ID in GitHub Secrets."}
 
-            logger.info(f"Using pre-uploaded vector store: {OPENAI_VECTOR_STORE_ID}")
+            logger.info(f"Creating new assistant with vector store: {OPENAI_VECTOR_STORE_ID}")
 
             # Create assistant with existing vector store (no file upload needed!)
             assistants = client.beta.assistants.create(
@@ -252,21 +252,54 @@ def setup_assistant_task():
             
             raw_assistant_id = assistants.id
             hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
+
+            # Store assistant ID in Redis with hash key
             redis_key = f"assistant:{hashed_key}"
             redis_client.set(redis_key, raw_assistant_id)
+
             logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
-            
+
             return {"assistant_key": hashed_key, "status": "completed"}
 
     except Exception as e:
         logger.error(f"Error in setup_assistant_task: {str(e)}")
         return {"error": str(e)}
 
+@app.route("/health", methods=["GET"])
+def health():
+    """Health check endpoint for load balancers"""
+    return jsonify({"status": "healthy"}), 200
+
 @app.route("/api/start", methods=["GET"])
 def start():
     """Start assistant setup as a background task"""
     try:
-        # Start the background task
+        # Check if session already has an assistant
+        existing_assistant_key = session.get('assistant_key')
+
+        if existing_assistant_key:
+            # Verify the assistant still exists in Redis
+            redis_key = f"assistant:{existing_assistant_key}"
+            raw_assistant_id = redis_client.get(redis_key)
+
+            if raw_assistant_id:
+                raw_assistant_id = raw_assistant_id.decode("utf-8")
+                # Verify it exists in OpenAI
+                try:
+                    client.beta.assistants.retrieve(raw_assistant_id)
+                    logger.info(f"Reusing existing assistant for session: {existing_assistant_key}")
+                    return jsonify({
+                        "assistant_key": existing_assistant_key,
+                        "status": "existing",
+                        "message": "Using existing assistant from session"
+                    }), 200
+                except Exception as e:
+                    logger.warning(f"Assistant {raw_assistant_id} not found in OpenAI, will create new one: {e}")
+                    # Continue to create new assistant below
+            else:
+                logger.warning(f"Assistant key {existing_assistant_key} not found in Redis, will create new one")
+
+        # Start the background task to create new assistant
         task = setup_assistant_task.apply_async()
         return jsonify({"task_id": task.id, "status": "started"}), 202
     except Exception as e:
@@ -293,6 +326,8 @@ def get_start_status():
         elif task.state == 'SUCCESS':
             result = task.result
             if isinstance(result, dict) and 'assistant_key' in result:
+                # Store assistant_key in session for reuse
+                session['assistant_key'] = result['assistant_key']
                 response = {
                     'state': task.state,
                     'assistant_key': result['assistant_key'],
