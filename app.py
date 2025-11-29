@@ -13,6 +13,7 @@ from celery import Celery
 from celery.result import AsyncResult
 import redis
 import json
+import ssl
 
 app = Flask(__name__)
 
@@ -24,40 +25,60 @@ client = OpenAI()
 
 instructions = """
 You are an ARFID expert. Based on the imputed safe foods, avoided foods, and restrictions, generate exactly 15 meal recommendations. Each recommendation should build on one of the safe foods or provide an alternative to one of the avoided foods.
-Group the recommendations into categories that reflect the input (for example, extra proteins, more vegetables, or additional snacks). 
+Group the recommendations into categories that reflect the input (for example, extra proteins, more vegetables, or additional snacks).
 For each category, provide the list of recommended foods along with a brief transition strategy on how to incorporate these foods gradually. Do not include other food restrictions or any allergy considerations unless specified by the user.
-Provide output at around a 6th grade reading level. 
+Provide output at around a 6th grade reading level.
 
 Ensure that the final output contains exactly 15 dishes in total. Use arfid.json as an example of the expected output to be returned.
-For every entry in the recommendations list, the sum of all the entry.foods list should equal 15. Keep generating responses if this is less than 15. 
+For every entry in the recommendations list, the sum of all the entry.foods list should equal 15. Keep generating responses if this is less than 15.
 For the transition strategy, provide varied explanations as to how the patient can gradually incorporate these foods into their diet.
 The response is being provided to a web API, so just the JSON response is needed. Do not use the word "sneak" or "patient" in the output.
 
-In the allergy considerations, do not provide general safety information. This should be specific to the food items recommended and the entered allergies or restrictions. You should check whether the food item could potentially contain an allergen that the user has specified (e.g, no peanut butter if the user has a peanut allergy). 
+In the allergy considerations, do not provide general safety information. This should be specific to the food items recommended and the entered allergies or restrictions. You should check whether the food item could potentially contain an allergen that the user has specified (e.g, no peanut butter if the user has a peanut allergy).
 
-In addition, the response should take a subset of recommendations and rank them in ease of implementation, accomplishment, and preparation. This should include 5 of the 20 provided recommendations. 
+In addition, the response should take a subset of recommendations and rank them in ease of implementation, accomplishment, and preparation. This should include 5 of the 20 provided recommendations.
 
-The return response should be a string of a JSON object. The JSON object needs to match the format of arfid.json The web application will parse it.  
+The return response should be a string of a JSON object. The JSON object needs to match the format of arfid.json The web application will parse it.
 """
 
-app.config["SESSION_TYPE"]="redis"
+def get_redis_connection(url):
+    """Create Redis connection with proper SSL configuration for rediss:// URLs"""
+    if url.startswith('rediss://'):
+        return redis.from_url(
+            url,
+            ssl_cert_reqs=ssl.CERT_NONE
+        )
+    return redis.from_url(url)
 
+REDIS_URL = os.environ.get("REDIS_URL")
+
+app.config["SESSION_TYPE"]="redis"
 app.config["SESSION_PERMANENT"]=False
 app.config["SESSION_USE_SIGNER"]=True
 app.config["SESSION_KEY_PREFIX"]="flask_session:"
-app.config["SESSION_REDIS"]=redis.from_url(os.environ.get("REDIS_URL"))
+app.config["SESSION_REDIS"]=get_redis_connection(REDIS_URL)
 app.config["SECRET_KEY"]=os.environ.get("FLASK_SECRET_KEY")
-app.config.update(
-    CELERY_BROKER_URL=os.environ.get("REDIS_URL"),
-    CELERY_RESULT_BACKEND=os.environ.get("REDIS_URL"),
-)
+
+# Configure Celery with SSL parameters for rediss:// URLs
+if REDIS_URL.startswith('rediss://'):
+    broker_url = f"{REDIS_URL}?ssl_cert_reqs={ssl.CERT_NONE}"
+    app.config.update(
+        CELERY_BROKER_URL=broker_url,
+        CELERY_RESULT_BACKEND=broker_url,
+    )
+else:
+    app.config.update(
+        CELERY_BROKER_URL=REDIS_URL,
+        CELERY_RESULT_BACKEND=REDIS_URL,
+    )
+
 Session(app)
 celery = Celery(
     app.import_name,
     backend=app.config["CELERY_RESULT_BACKEND"],
     broker=app.config["CELERY_BROKER_URL"]
 )
-redis_client = redis.from_url(os.environ.get("REDIS_URL"))
+redis_client = get_redis_connection(REDIS_URL)
 
 
 ongoing_tasks = {}
