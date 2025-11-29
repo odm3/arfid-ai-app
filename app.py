@@ -228,14 +228,14 @@ def setup_assistant_task():
                         },
                         reasoning_effort="medium"
                     )
-                    
-                    raw_assistant_id = assistants.id
-                    hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
-                    redis_key = f"assistant:{hashed_key}"
-                    redis_client.set(redis_key, raw_assistant_id)
-                    logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
-                    
-                    return {"assistant_key": hashed_key, "status": "completed"}
+            
+            raw_assistant_id = assistants.id
+            hashed_key = hashlib.sha256(raw_assistant_id.encode("utf-8")).hexdigest()
+            redis_key = f"assistant:{hashed_key}"
+            redis_client.set(redis_key, raw_assistant_id)
+            logger.info(f"Assistant created with ID: {raw_assistant_id} (hashed as: {hashed_key})")
+            
+            return {"assistant_key": hashed_key, "status": "completed"}
 
     except Exception as e:
         logger.error(f"Error in setup_assistant_task: {str(e)}")
