@@ -145,7 +145,7 @@ cat > /tmp/lightsail-deployment.json << EOF
       "environment": {
         "OPENAI_API_KEY": "${OPENAI_KEY}",
         "FLASK_SECRET_KEY": "${FLASK_SECRET}",
-        "REDISCLOUD_URL": "${REDIS_CONNECTION}"
+        "REDIS_URL": "${REDIS_CONNECTION}"
       }
     },
     "worker": {
@@ -153,7 +153,7 @@ cat > /tmp/lightsail-deployment.json << EOF
       "environment": {
         "OPENAI_API_KEY": "${OPENAI_KEY}",
         "FLASK_SECRET_KEY": "${FLASK_SECRET}",
-        "REDISCLOUD_URL": "${REDIS_CONNECTION}"
+        "REDIS_URL": "${REDIS_CONNECTION}"
       }
     }
   },
