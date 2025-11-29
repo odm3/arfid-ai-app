@@ -61,7 +61,7 @@ app.config["SECRET_KEY"]=os.environ.get("FLASK_SECRET_KEY")
 
 # Configure Celery with SSL parameters for rediss:// URLs
 if REDIS_URL.startswith('rediss://'):
-    broker_url = f"{REDIS_URL}?ssl_cert_reqs={ssl.CERT_NONE}"
+    broker_url = f"{REDIS_URL}?ssl_cert_reqs=none"
     app.config.update(
         CELERY_BROKER_URL=broker_url,
         CELERY_RESULT_BACKEND=broker_url,
